@@ -1,0 +1,13 @@
+package com.hbbhbank.moamoa;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class MoamoaBackendV2Application {
+
+  public static void main(String[] args) {
+    SpringApplication.run(MoamoaBackendV2Application.class, args);
+  }
+
+}
