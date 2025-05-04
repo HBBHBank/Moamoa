@@ -11,6 +11,7 @@ import org.hibernate.annotations.DynamicUpdate;
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @DynamicUpdate
+@Table(name="users")
 public class User {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
