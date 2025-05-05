@@ -27,7 +27,7 @@ public class User {
   @Column(name="phone_number", nullable = false, unique = true, length = 20)
   private String phoneNumber; // 휴대폰 번호
 
-  @Column(name="password", nullable = false, length = 20)
+  @Column(name="password", nullable = false, length = 500)
   private String password; // 비밀번호
 
   @Column(name = "image", nullable = false)
