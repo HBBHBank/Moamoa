@@ -1,6 +1,5 @@
 package com.hbbhbank.moamoa.global.security.filter;
 
-import com.hbbhbank.moamoa.global.common.JsonResponse;
 import com.hbbhbank.moamoa.global.constant.AuthConstant;
 import com.hbbhbank.moamoa.global.exception.BaseException;
 import com.hbbhbank.moamoa.global.exception.ErrorCode;

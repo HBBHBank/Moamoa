@@ -4,7 +4,6 @@ import com.hbbhbank.moamoa.global.exception.ErrorCode;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
-import lombok.AllArgsConstructor;
 
 /**
  * 인증 및 토큰 처리 관련 에러 코드
