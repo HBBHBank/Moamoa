@@ -1,14 +1,11 @@
 package com.hbbhbank.moamoa.global.security.service;
 
-import com.hbbhbank.moamoa.global.constant.AuthConstant;
 import com.hbbhbank.moamoa.global.exception.BaseException;
 import com.hbbhbank.moamoa.global.security.domain.RefreshToken;
 import com.hbbhbank.moamoa.global.security.exception.AuthErrorCode;
 import com.hbbhbank.moamoa.global.security.info.JwtUserInfo;
 import com.hbbhbank.moamoa.global.security.repository.RefreshTokenRepository;
 import com.hbbhbank.moamoa.global.security.util.JwtUtil;
-import com.hbbhbank.moamoa.user.domain.ERole;
-import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
