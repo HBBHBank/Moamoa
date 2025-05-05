@@ -46,6 +46,7 @@ public class UserService {
     user.changeUserName(dto.name());
   }
 
+  // 자동으로 Read Only 트랜잭션이 적용됨
   private User getCurrentUser() {
     Long userId = SecurityUtil.getCurrentUserId();
     return userRepository.findById(userId)
