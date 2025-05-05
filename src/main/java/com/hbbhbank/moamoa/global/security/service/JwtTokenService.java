@@ -1,14 +1,11 @@
 package com.hbbhbank.moamoa.global.security.service;
 
-import com.hbbhbank.moamoa.global.constant.AuthConstant;
 import com.hbbhbank.moamoa.global.exception.BaseException;
 import com.hbbhbank.moamoa.global.security.domain.RefreshToken;
 import com.hbbhbank.moamoa.global.security.exception.AuthErrorCode;
 import com.hbbhbank.moamoa.global.security.info.JwtUserInfo;
 import com.hbbhbank.moamoa.global.security.repository.RefreshTokenRepository;
 import com.hbbhbank.moamoa.global.security.util.JwtUtil;
-import com.hbbhbank.moamoa.user.domain.ERole;
-import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,18 +23,15 @@ public class JwtTokenService {
   /**
    * 로그인 시 Refresh Token 저장
    */
-  @Transactional // 쓰기 작업이므로 readOnly=false로 오버라이딩
+  @Transactional
   public void saveRefreshToken(Long userId, String refreshToken, long expirySeconds) {
-    // 현재 시각 기준으로 만료 일시 계산
     LocalDateTime expiresAt = LocalDateTime.now().plusSeconds(expirySeconds);
 
-    // 기존에 저장된 토큰이 있으면 삭제 (중복 저장 방지)
-    refreshTokenRepository.findByUserId(userId).ifPresent(existing -> {
-      refreshTokenRepository.deleteByUserId(userId);
-    });
+    RefreshToken tokenEntity = refreshTokenRepository.findByUserId(userId)
+      .map(existing -> existing.updateToken(refreshToken, expiresAt))
+      .orElseGet(() -> new RefreshToken(userId, refreshToken, expiresAt));
 
-    // 새로운 토큰 저장
-    refreshTokenRepository.save(new RefreshToken(userId, refreshToken, expiresAt));
+    refreshTokenRepository.save(tokenEntity);
   }
 
   /**
@@ -78,20 +72,5 @@ public class JwtTokenService {
     refreshTokenRepository.deleteByUserId(userId);
   }
 
-  /**
-   * JWT에서 사용자 ID 추출
-   */
-  private Long extractUserId(String token) {
-    Claims claims = jwtUtil.parseClaims(token);
-    return claims.get(AuthConstant.CLAIM_USER_ID, Long.class);
-  }
-
-  /**
-   * JWT에서 사용자 권한 정보 추출
-   */
-  private ERole extractUserRole(String token) {
-    Claims claims = jwtUtil.parseClaims(token);
-    return ERole.valueOf(claims.get(AuthConstant.CLAIM_USER_ROLE, String.class));
-  }
 }
 

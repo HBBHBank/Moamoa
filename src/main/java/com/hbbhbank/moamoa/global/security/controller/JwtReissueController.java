@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/auth/jwt/reissue")
+@RequestMapping("/api/v1/auth/jwt/reissue")
 public class JwtReissueController {
 
   private final JwtTokenService jwtTokenService;

@@ -107,21 +107,9 @@ public class JwtUtil {
    * Access + RefreshToken 한 번에 발급
    */
   public JwtInfo generateTokens(Long id, ERole role) {
-    return new JwtInfo(generateAccessToken(id, role), generateRefreshToken(id, role));
-  }
-
-  /**
-   * 사용자 ID 추출
-   */
-  public Long extractUserId(String token) {
-    return parseClaims(token).get(AuthConstant.CLAIM_USER_ID, Long.class);
-  }
-
-  /**
-   * 사용자 Role 추출
-   */
-  public ERole extractUserRole(String token) {
-    return ERole.valueOf(parseClaims(token).get(AuthConstant.CLAIM_USER_ROLE, String.class));
+    String accessToken = generateAccessToken(id, role);
+    String refreshToken = generateRefreshToken(id, role);
+    return new JwtInfo(accessToken, refreshToken, refreshExpiration);
   }
 
   /**

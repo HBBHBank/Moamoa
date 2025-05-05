@@ -1,5 +1,9 @@
 package com.hbbhbank.moamoa.global.security.util;
 
+import com.hbbhbank.moamoa.global.exception.BaseException;
+import com.hbbhbank.moamoa.global.exception.GlobalErrorCode;
+import com.hbbhbank.moamoa.global.security.info.JwtUserInfo;
+import com.hbbhbank.moamoa.global.security.principal.UserPrincipal;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -35,18 +39,16 @@ public class SecurityUtil {
   }
 
   /**
-   * 현재 인증된 사용자의 ID (username 또는 email)를 문자열로 반환합니다.
+   * 현재 인증된 사용자의 ID를 가져오는 메서드
    *
    * @return 사용자 식별자 또는 null
    */
-  public static String getCurrentUsername() {
+  public static Long getCurrentUserId() {
     Object principal = getCurrentPrincipal();
-    if (principal instanceof UserDetails userDetails) {
-      return userDetails.getUsername();
-    } else if (principal instanceof String username) {
-      return username;
+    if (principal instanceof UserPrincipal userPrincipal) {
+      return userPrincipal.getUserId(); // → UserPrincipal에서 userId 추출
     }
-    return null;
+    throw new BaseException(GlobalErrorCode.UNAUTHORIZED);
   }
 
   /**
