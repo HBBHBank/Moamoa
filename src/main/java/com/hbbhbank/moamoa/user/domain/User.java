@@ -30,9 +30,9 @@ public class User {
   @Column(name="password", nullable = false, length = 20)
   private String password; // 비밀번호
 
-  @OneToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "profile_image_id")
-  private ProfileImage profileImageUrl;  // 프로필 이미지
+  @Column(name = "image", nullable = false)
+  @Enumerated(EnumType.STRING)
+  private ProfileImage profileImage;  // 프로필 이미지
 
   @Embedded
   private TermsAgreement terms; // 약관 동의 여부
@@ -42,12 +42,12 @@ public class User {
   private ERole role; // Spring Security에서 사용하는 역할
 
   @Builder
-  public User(String name, String email, String phoneNumber, String password, ProfileImage profileImageUrl, TermsAgreement terms, ERole role) {
+  public User(String name, String email, String phoneNumber, String password, ProfileImage profileImage, TermsAgreement terms, ERole role) {
     this.name = name;
     this.email = email;
     this.phoneNumber = phoneNumber;
     this.password = password;
-    this.profileImageUrl = profileImageUrl;
+    this.profileImage = profileImage;
     this.terms = terms;
     this.role = role;
   }
@@ -72,8 +72,4 @@ public class User {
     this.password = encodedPassword; // 이미 인코딩된 값만 받음
   }
 
-  // 프로필 이미지 변경 - User에서 생성과 변경 흐름 담당
-  public void changeProfileImage(ProfileImage newImage) {
-    this.profileImageUrl = newImage;
-  }
 }
