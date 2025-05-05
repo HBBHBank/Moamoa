@@ -3,6 +3,7 @@ package com.hbbhbank.moamoa.global.security.util;
 import com.hbbhbank.moamoa.global.exception.BaseException;
 import com.hbbhbank.moamoa.global.exception.GlobalErrorCode;
 import com.hbbhbank.moamoa.global.security.info.JwtUserInfo;
+import com.hbbhbank.moamoa.global.security.principal.UserPrincipal;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -44,8 +45,8 @@ public class SecurityUtil {
    */
   public static Long getCurrentUserId() {
     Object principal = getCurrentPrincipal();
-    if (principal instanceof JwtUserInfo userInfo) {
-      return userInfo.userId(); // 커스텀 JWT 기반 인증 객체에서 userId 추출
+    if (principal instanceof UserPrincipal userPrincipal) {
+      return userPrincipal.getUserId(); // → UserPrincipal에서 userId 추출
     }
     throw new BaseException(GlobalErrorCode.UNAUTHORIZED);
   }

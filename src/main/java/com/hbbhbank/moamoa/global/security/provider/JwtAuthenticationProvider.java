@@ -31,17 +31,27 @@ public class JwtAuthenticationProvider implements AuthenticationProvider {
   public Authentication authenticate(Authentication authentication) throws AuthenticationException {
     log.info("AuthenticationProvider 진입 성공");
 
-    // Principal이 String이면 폼 로그인 또는 잘못된 요청으로 간주
-    if (!authentication.getPrincipal().getClass().equals(String.class)) {
-      log.info("로그인 한 사용자 검증 과정");
-
-      // JWT 파싱 결과로 얻은 JwtUserInfo를 기반으로 인증 처리
-      return authOfAfterLogin((JwtUserInfo) authentication.getPrincipal());
-    } else {
-      log.info("폼 또는 소셜 로그인 요청 감지 (비정상 요청)");
-      throw new BaseException(GlobalErrorCode.VALIDATION_ERROR); // 커스텀 예외 발생
+    if (!(authentication.getPrincipal() instanceof JwtUserInfo)) {
+      log.warn("비정상 요청 감지: principal이 JwtUserInfo가 아님");
+      throw new BaseException(GlobalErrorCode.VALIDATION_ERROR);
     }
+
+    JwtUserInfo userInfo = (JwtUserInfo) authentication.getPrincipal();
+    UserPrincipal userPrincipal = customUserDetailService.loadUserById(userInfo.userId());
+
+    // 로그: 인증 객체 내용 출력
+    log.info("인증 객체 생성됨: id={}, role={}, authorities={}",
+      userPrincipal.getUserId(),
+      userPrincipal.getRole(),
+      userPrincipal.getAuthorities());
+
+    return new UsernamePasswordAuthenticationToken(
+      userPrincipal,
+      null,
+      userPrincipal.getAuthorities()
+    );
   }
+
 
   /**
    * JWT 기반 인증 후 사용자 정보를 확인하고 SecurityContext에 저장할 Authentication 객체 생성
