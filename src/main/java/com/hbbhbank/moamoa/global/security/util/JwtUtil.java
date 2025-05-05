@@ -107,8 +107,11 @@ public class JwtUtil {
    * Access + RefreshToken 한 번에 발급
    */
   public JwtInfo generateTokens(Long id, ERole role) {
-    return new JwtInfo(generateAccessToken(id, role), generateRefreshToken(id, role));
+    String accessToken = generateAccessToken(id, role);
+    String refreshToken = generateRefreshToken(id, role);
+    return new JwtInfo(accessToken, refreshToken, refreshExpiration);
   }
+
 
   /**
    * 사용자 ID 추출
