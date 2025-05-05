@@ -1,6 +1,9 @@
 package com.hbbhbank.moamoa.user.controller;
 
+import com.hbbhbank.moamoa.global.security.info.JwtInfo;
+import com.hbbhbank.moamoa.user.dto.request.LoginRequestDto;
 import com.hbbhbank.moamoa.user.dto.request.SignUpRequestDto;
+import com.hbbhbank.moamoa.user.dto.response.LoginResponseDto;
 import com.hbbhbank.moamoa.user.dto.response.SignUpResponseDto;
 import com.hbbhbank.moamoa.user.service.AuthService;
 import jakarta.validation.Valid;
@@ -22,5 +25,10 @@ public class AuthController {
   public ResponseEntity<SignUpResponseDto> signUp(@RequestBody @Valid SignUpRequestDto dto) {
     SignUpResponseDto response = authService.signUp(dto);
     return ResponseEntity.ok(response);
+  }
+
+  @PostMapping("/login")
+  public ResponseEntity<LoginResponseDto> login(@RequestBody @Valid LoginRequestDto loginRequestDto) {
+    return ResponseEntity.ok(authService.login(loginRequestDto));
   }
 }

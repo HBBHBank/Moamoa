@@ -12,6 +12,7 @@ public enum UserErrorCode implements ErrorCode {
   DUPLICATE_EMAIL(HttpStatus.CONFLICT, "USER_002", "이미 사용 중인 이메일입니다."),
   INVALID_PHONE(HttpStatus.BAD_REQUEST, "USER_003", "유효하지 않은 전화번호입니다."),
   NOT_FOUND_PROFILE_IMAGE(HttpStatus.NOT_FOUND, "USER_004", "존재하지 않는 프로필 이미지입니다."),
+  INVALID_PASSWORD(HttpStatus.UNAUTHORIZED, "USER_005", "비밀번호가 일치하지 않습니다."),
   ;
 
   private final HttpStatus status;
