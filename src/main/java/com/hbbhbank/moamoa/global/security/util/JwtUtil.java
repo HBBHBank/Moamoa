@@ -112,21 +112,6 @@ public class JwtUtil {
     return new JwtInfo(accessToken, refreshToken, refreshExpiration);
   }
 
-
-  /**
-   * 사용자 ID 추출
-   */
-  public Long extractUserId(String token) {
-    return parseClaims(token).get(AuthConstant.CLAIM_USER_ID, Long.class);
-  }
-
-  /**
-   * 사용자 Role 추출
-   */
-  public ERole extractUserRole(String token) {
-    return ERole.valueOf(parseClaims(token).get(AuthConstant.CLAIM_USER_ROLE, String.class));
-  }
-
   /**
    * 사용자 ID, Role을 포함한 정보 객체 추출
    */

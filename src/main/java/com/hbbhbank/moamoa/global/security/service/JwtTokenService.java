@@ -78,20 +78,5 @@ public class JwtTokenService {
     refreshTokenRepository.deleteByUserId(userId);
   }
 
-  /**
-   * JWT에서 사용자 ID 추출
-   */
-  private Long extractUserId(String token) {
-    Claims claims = jwtUtil.parseClaims(token);
-    return claims.get(AuthConstant.CLAIM_USER_ID, Long.class);
-  }
-
-  /**
-   * JWT에서 사용자 권한 정보 추출
-   */
-  private ERole extractUserRole(String token) {
-    Claims claims = jwtUtil.parseClaims(token);
-    return ERole.valueOf(claims.get(AuthConstant.CLAIM_USER_ROLE, String.class));
-  }
 }
 
