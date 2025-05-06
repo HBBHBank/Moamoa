@@ -27,10 +27,9 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-@Configuration // 해당 클래스가 스프링 설정 클래스임을 명시
-@EnableWebSecurity // Spring Security를 활성화
-@EnableMethodSecurity(prePostEnabled = true) // @PreAuthorize 등 메서드 단위 권한 제어 활성화
-@RequiredArgsConstructor // 생성자 주입을 위한 Lombok 어노테이션
+@Configuration
+@EnableWebSecurity
+@RequiredArgsConstructor
 public class SecurityConfig {
 
   // 로그아웃 시 내부 처리 로직을 담당하는 핸들러
@@ -54,18 +53,19 @@ public class SecurityConfig {
   @Bean
   public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
     return http
-      .cors(Customizer.withDefaults()) // CORS 설정 활성화 (corsConfigurationSource에서 정의된 정책 적용)
+      .cors(Customizer.withDefaults()) // CORS 설정 활성화
       .csrf(AbstractHttpConfigurer::disable) // CSRF 보호 비활성화 (JWT 기반이므로 상태 비저장 방식)
       .httpBasic(AbstractHttpConfigurer::disable) // 기본 브라우저 인증창 비활성화
       .formLogin(AbstractHttpConfigurer::disable) // 스프링 시큐리티 기본 로그인 폼 사용 안 함
 
+      // 세션을 생성하지 않고 상태를 저장하지 않는 방식으로 설정 (JWT 기반 인증은 매 요청마다 토큰 검증)
       .sessionManagement(sessionManagement ->
         sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-      // 세션을 생성하지 않고 상태를 저장하지 않는 방식으로 설정 (JWT 기반 인증은 매 요청마다 토큰 검증)
 
       .authorizeHttpRequests(auth -> auth
         .requestMatchers(AuthConstant.NOT_NEED_AUTH.toArray(String[]::new)).permitAll() // 인증 없이 접근 가능한 URL 목록 허용
         .requestMatchers(PathRequest.toStaticResources().atCommonLocations()).permitAll() // 정적 리소스(js, css 등) 허용
+        .requestMatchers("/api/v1/**").hasAnyRole("USER") // ROLE_USER 권한을 가진 사용자만 접근 가능
         .anyRequest().authenticated() // 위의 예외를 제외한 모든 요청은 인증 필요
       )
 
@@ -76,8 +76,8 @@ public class SecurityConfig {
       )
 
       .exceptionHandling(exception -> exception
-        .authenticationEntryPoint(customAuthenticationEntryPointHandler) // 인증 실패 시 JSON 응답
         .accessDeniedHandler(customAccessDeniedHandler) // 인가 실패 시 JSON 응답
+        .authenticationEntryPoint(customAuthenticationEntryPointHandler) // 인증 실패 시 JSON 응답
       )
 
       .addFilterBefore(

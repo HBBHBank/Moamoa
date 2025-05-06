@@ -1,6 +1,5 @@
 package com.hbbhbank.moamoa.user.controller;
 
-import com.hbbhbank.moamoa.global.security.info.JwtInfo;
 import com.hbbhbank.moamoa.user.dto.request.LoginRequestDto;
 import com.hbbhbank.moamoa.user.dto.request.SignUpRequestDto;
 import com.hbbhbank.moamoa.user.dto.response.LoginResponseDto;

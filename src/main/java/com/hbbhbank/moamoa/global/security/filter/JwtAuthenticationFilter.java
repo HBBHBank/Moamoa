@@ -24,8 +24,8 @@ import java.io.IOException;
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
-  private final JwtUtil jwtUtil; // JWT 파싱 및 검증 유틸 클래스
-  private final JwtAuthenticationManager jwtAuthenticationManager; // 실제 인증 로직을 담당하는 Manager
+  private final JwtUtil jwtUtil;
+  private final JwtAuthenticationManager jwtAuthenticationManager;
 
   // 인증이 필요 없는 URI는 필터 적용 제외
   @Override
@@ -33,7 +33,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     return AuthConstant.NOT_NEED_AUTH.contains(request.getRequestURI());
   }
 
-  // JWT 인증 필터의 핵심 로직
   @Override
   protected void doFilterInternal(HttpServletRequest request,
                                   HttpServletResponse response,

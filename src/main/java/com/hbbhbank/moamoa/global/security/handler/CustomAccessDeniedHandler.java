@@ -12,9 +12,6 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-/**
- * 인가 실패 처리 핸들러 (403 Forbidden)
- */
 @Slf4j
 @Component
 public class CustomAccessDeniedHandler implements AccessDeniedHandler {
