@@ -1,9 +1,7 @@
 package com.hbbhbank.moamoa.user.service;
 
 import com.hbbhbank.moamoa.global.exception.BaseException;
-import com.hbbhbank.moamoa.global.security.info.JwtInfo;
 import com.hbbhbank.moamoa.global.security.service.JwtTokenService;
-import com.hbbhbank.moamoa.global.security.util.JwtUtil;
 import com.hbbhbank.moamoa.user.domain.ERole;
 import com.hbbhbank.moamoa.user.domain.ProfileImage;
 import com.hbbhbank.moamoa.user.domain.TermsAgreement;
