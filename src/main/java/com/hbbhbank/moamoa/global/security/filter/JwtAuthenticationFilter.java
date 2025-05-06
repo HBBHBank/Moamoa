@@ -3,6 +3,7 @@ package com.hbbhbank.moamoa.global.security.filter;
 import com.hbbhbank.moamoa.global.constant.AuthConstant;
 import com.hbbhbank.moamoa.global.exception.BaseException;
 import com.hbbhbank.moamoa.global.exception.GlobalErrorCode;
+import com.hbbhbank.moamoa.global.security.exception.AuthErrorCode;
 import com.hbbhbank.moamoa.global.security.info.JwtUserInfo;
 import com.hbbhbank.moamoa.global.security.provider.JwtAuthenticationManager;
 import com.hbbhbank.moamoa.global.security.util.HeaderUtil;
@@ -41,6 +42,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     // 요청 헤더에서 "Authorization" 값을 추출하고 "Bearer " 접두사 제거
     String token = HeaderUtil.refineHeader(request, AuthConstant.PREFIX_AUTH, AuthConstant.PREFIX_BEARER)
       .orElseThrow(() -> new BaseException(GlobalErrorCode.INVALID_HEADER_VALUE));
+
+    // AccessToken만 인증 허용
+    if (!jwtUtil.isAccessToken(token)) {
+      throw new BaseException(AuthErrorCode.INVALID_ACCESS_TOKEN);
+    }
 
     // JWT 유틸을 통해 사용자 ID, 권한 정보가 포함된 객체를 추출
     JwtUserInfo jwtUserInfo = jwtUtil.extractUserInfo(token);

@@ -69,19 +69,20 @@ public class JwtUtil {
 
   // AccessToken 생성
   public String generateAccessToken(Long id, ERole role) {
-    return generateToken(id, role, accessExpiration);
+    return generateToken(id, role, accessExpiration, "ACCESS");
   }
 
   // RefreshToken 생성
   public String generateRefreshToken(Long id, ERole role) {
-    return generateToken(id, role, refreshExpiration);
+    return generateToken(id, role, refreshExpiration, "REFRESH");
   }
 
   // 공통 토큰 생성 로직
-  private String generateToken(Long id, ERole role, long expiration) {
+  private String generateToken(Long id, ERole role, long expiration, String tokenType) {
     Claims claims = Jwts.claims();
     claims.put(AuthConstant.CLAIM_USER_ID, id);
     if (role != null) claims.put(AuthConstant.CLAIM_USER_ROLE, role);
+    claims.put("tokenType", tokenType);
 
     Date now = new Date();
     return Jwts.builder()
@@ -111,5 +112,22 @@ public class JwtUtil {
     }
 
     return new JwtUserInfo(userId, ERole.valueOf(roleStr));
+  }
+
+  public boolean isAccessToken(String token) {
+    return "ACCESS".equals(getTokenType(token));
+  }
+
+  public boolean isRefreshToken(String token) {
+    return "REFRESH".equals(getTokenType(token));
+  }
+
+  private String getTokenType(String token) {
+    try {
+      Claims claims = parseClaims(token);
+      return claims.get("tokenType", String.class);
+    } catch (Exception e) {
+      throw new BaseException(GlobalErrorCode.INVALID_JWT_PAYLOAD);
+    }
   }
 }
