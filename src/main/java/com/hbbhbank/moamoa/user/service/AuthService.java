@@ -25,38 +25,24 @@ public class AuthService {
 
   private final UserRepository userRepository;
   private final PasswordEncoder passwordEncoder;
-  private final JwtUtil jwtUtil;
   private final JwtTokenService jwtTokenService;
 
   @Transactional
   public SignUpResponseDto signUp(SignUpRequestDto dto) {
+    // DTO 유효성 검사
     dto.validate();
 
-    if (userRepository.existsByEmail(dto.email())) {
-      throw BaseException.type(UserErrorCode.DUPLICATE_EMAIL);
-    }
+    // 이메일, 전화번호 중복 검사
+    validateDuplicate(dto.email(), dto.phoneNumber());
 
-    if (userRepository.existsByPhoneNumber(dto.phoneNumber())) {
-      throw BaseException.type(UserErrorCode.INVALID_PHONE);
-    }
-
-    String encodedPassword = passwordEncoder.encode(dto.password());
-
-    TermsAgreement terms = TermsAgreement.builder()
-      .serviceTermsAgreed(Boolean.TRUE.equals(dto.serviceTermsAgreed()))
-      .privacyPolicyAgreed(Boolean.TRUE.equals(dto.privacyPolicyAgreed()))
-      .marketingAgreed(Boolean.TRUE.equals(dto.marketingAgreed()))
-      .build();
-
-    ProfileImage profileImage = ProfileImage.from(dto.profileImage());
-
+    // 유저 생성 및 저장
     User user = User.builder()
       .name(dto.name())
       .email(dto.email())
       .phoneNumber(dto.phoneNumber())
-      .password(encodedPassword)
-      .profileImage(profileImage)
-      .terms(terms)
+      .password(encodePassword(dto.password()))
+      .profileImage(ProfileImage.from(dto.profileImage()))
+      .terms(toTermsAgreement(dto))
       .role(ERole.USER)
       .build();
 
@@ -71,25 +57,35 @@ public class AuthService {
       .orElseThrow(() -> BaseException.type(UserErrorCode.USER_NOT_FOUND));
 
     if (!passwordEncoder.matches(loginRequestDto.password(), user.getPassword())) {
-      throw new BaseException(UserErrorCode.INVALID_PASSWORD);
+      throw BaseException.type(UserErrorCode.INVALID_PASSWORD);
     }
 
-    // Access & Refresh 토큰 생성
-    JwtInfo jwtInfo = jwtUtil.generateTokens(user.getId(), user.getRole());
-
-    // RefreshToken 저장
-    jwtTokenService.saveRefreshToken(
-      user.getId(),
-      jwtInfo.refreshToken(),
-      jwtInfo.refreshTokenExpirySeconds()
-    );
-
-    // 클라이언트에게 보낼 응답 생성
-    return new LoginResponseDto(
-      user.getId(),
-      jwtInfo.accessToken(),
-      jwtInfo.refreshToken(),
-      user.getRole().name()
-    );
+    // 핵심 책임: 사용자 인증 성공 후 토큰 발급 요청만 위임
+    return jwtTokenService.issueLoginTokens(user);
   }
+
+  // 중복 체크 메서드
+  private void validateDuplicate(String email, String phoneNumber) {
+    if (userRepository.existsByEmail(email)) {
+      throw BaseException.type(UserErrorCode.DUPLICATE_EMAIL);
+    }
+
+    if (userRepository.existsByPhoneNumber(phoneNumber)) {
+      throw BaseException.type(UserErrorCode.INVALID_PHONE);
+    }
+  }
+
+  // 패스워드 인코딩 메서드
+  private String encodePassword(String rawPassword) {
+    return passwordEncoder.encode(rawPassword);
+  }
+
+  private TermsAgreement toTermsAgreement(SignUpRequestDto dto) {
+    return TermsAgreement.builder()
+      .serviceTermsAgreed(Boolean.TRUE.equals(dto.serviceTermsAgreed()))
+      .privacyPolicyAgreed(Boolean.TRUE.equals(dto.privacyPolicyAgreed()))
+      .marketingAgreed(Boolean.TRUE.equals(dto.marketingAgreed()))
+      .build();
+  }
+
 }
