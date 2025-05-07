@@ -12,9 +12,6 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-/**
- * 인증 실패 처리 핸들러 (401 Unauthorized)
- */
 @Slf4j
 @Component
 public class CustomAuthenticationEntryPointHandler implements AuthenticationEntryPoint {

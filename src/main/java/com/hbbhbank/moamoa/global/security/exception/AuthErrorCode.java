@@ -28,6 +28,7 @@ public enum AuthErrorCode implements ErrorCode {
   TOKEN_MALFORMED(HttpStatus.UNAUTHORIZED, "AUTH_011", "토큰 포맷이 올바르지 않습니다."),
   UNSUPPORTED_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH_012", "지원하지 않는 토큰입니다."),
   TOKEN_SIGNATURE_INVALID(HttpStatus.UNAUTHORIZED, "AUTH_013", "토큰 서명이 유효하지 않습니다."),
+  INVALID_ACCESS_TOKEN(HttpStatus.UNAUTHORIZED, "AUTH_014", "Access Token만 허용됩니다."),
 
   // 사용자 인증/인가
   INVALID_CREDENTIALS(HttpStatus.UNAUTHORIZED, "AUTH_020", "아이디 또는 비밀번호가 올바르지 않습니다."),

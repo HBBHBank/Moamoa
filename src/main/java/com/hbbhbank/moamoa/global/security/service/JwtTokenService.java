@@ -3,9 +3,12 @@ package com.hbbhbank.moamoa.global.security.service;
 import com.hbbhbank.moamoa.global.exception.BaseException;
 import com.hbbhbank.moamoa.global.security.domain.RefreshToken;
 import com.hbbhbank.moamoa.global.security.exception.AuthErrorCode;
+import com.hbbhbank.moamoa.global.security.info.JwtInfo;
 import com.hbbhbank.moamoa.global.security.info.JwtUserInfo;
 import com.hbbhbank.moamoa.global.security.repository.RefreshTokenRepository;
 import com.hbbhbank.moamoa.global.security.util.JwtUtil;
+import com.hbbhbank.moamoa.user.domain.User;
+import com.hbbhbank.moamoa.user.dto.response.LoginResponseDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,9 +23,22 @@ public class JwtTokenService {
   private final JwtUtil jwtUtil;
   private final RefreshTokenRepository refreshTokenRepository; // DB에 저장된 RefreshToken 관리
 
-  /**
-   * 로그인 시 Refresh Token 저장
-   */
+  // 로그인 성공 시 Access & Refresh 토큰 발급 + RefreshToken 저장 처리
+  @Transactional
+  public LoginResponseDto issueLoginTokens(User user) {
+    JwtInfo jwtInfo = jwtUtil.generateTokens(user.getId(), user.getRole());
+
+    saveRefreshToken(user.getId(), jwtInfo.refreshToken(), jwtInfo.refreshTokenExpirySeconds());
+
+    return new LoginResponseDto(
+      user.getId(),
+      jwtInfo.accessToken(),
+      jwtInfo.refreshToken(),
+      user.getRole().name()
+    );
+  }
+
+  // RefreshToken 저장 또는 갱신
   @Transactional
   public void saveRefreshToken(Long userId, String refreshToken, long expirySeconds) {
     LocalDateTime expiresAt = LocalDateTime.now().plusSeconds(expirySeconds);
@@ -34,9 +50,7 @@ public class JwtTokenService {
     refreshTokenRepository.save(tokenEntity);
   }
 
-  /**
-   * 클라이언트가 보낸 Refresh Token을 검증하고 새 Access Token 발급
-   */
+  // 클라이언트가 보낸 Refresh Token을 검증하고 새로운 Access Token 발급
   public String reissueAccessToken(String refreshToken) {
     // 토큰 유효성 검증 (서명, 만료 여부 등)
     if (!jwtUtil.isValidToken(refreshToken)) {
@@ -64,9 +78,7 @@ public class JwtTokenService {
     return jwtUtil.generateAccessToken(userInfo.userId(), userInfo.role());
   }
 
-  /**
-   * 로그아웃 시 Refresh Token 삭제
-   */
+ // 로그아웃시 Refresh Token 삭제
   @Transactional // DB에서 삭제 작업이므로 트랜잭션 적용
   public void deleteRefreshToken(Long userId) {
     refreshTokenRepository.deleteByUserId(userId);

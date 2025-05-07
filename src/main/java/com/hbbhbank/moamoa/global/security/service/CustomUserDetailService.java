@@ -4,7 +4,7 @@ import com.hbbhbank.moamoa.global.exception.BaseException;
 import com.hbbhbank.moamoa.global.security.exception.AuthErrorCode;
 import com.hbbhbank.moamoa.global.security.principal.UserPrincipal;
 import com.hbbhbank.moamoa.global.security.repository.UserSecurityRepository;
-import com.hbbhbank.moamoa.user.projection.UserSecurityForm;
+import com.hbbhbank.moamoa.global.security.dto.UserSecurityForm;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -16,12 +16,9 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class CustomUserDetailService implements UserDetailsService {
 
-  private final UserSecurityRepository userSecurityRepository; // 사용자 인증 정보를 조회하기 위한 JPA Repository
+  private final UserSecurityRepository userSecurityRepository;
 
-  /**
-   * 이메일(또는 사용자 이름) 기반으로 사용자를 조회하여 UserDetails 반환
-   * Spring Security 내부 로그인 로직에서 사용됨
-   */
+  // 이메일(또는 사용자 이름) 기반으로 사용자를 조회하여 UserDetails 반환, Spring Security 내부 로그인 로직에서 사용됨
   @Override
   public UserPrincipal loadUserByUsername(String email) throws UsernameNotFoundException {
     // 이메일을 기반으로 사용자 인증 정보를 projection 형태로 조회
@@ -33,9 +30,7 @@ public class CustomUserDetailService implements UserDetailsService {
     return UserPrincipal.create(user);
   }
 
-  /**
-   * JWT 인증 시 사용자 ID를 기준으로 사용자 인증 정보를 조회
-   */
+  // JWT 인증 시 사용자 ID를 기준으로 사용자 인증 정보를 조회
   public UserPrincipal loadUserById(Long id) {
     // 사용자 ID를 기반으로 projection 조회
     UserSecurityForm userSecurityForm = userSecurityRepository.findUserSecurityFromById(id)

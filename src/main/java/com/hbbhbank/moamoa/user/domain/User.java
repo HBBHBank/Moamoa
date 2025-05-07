@@ -57,11 +57,6 @@ public class User {
     this.name = name;
   }
 
-  // 이메일 변경
-  public void changeEmail(String email) {
-    this.email = email;
-  }
-
   // 휴대폰 번호 변경
   public void changePhoneNumber(String phoneNumber) {
     this.phoneNumber = phoneNumber;

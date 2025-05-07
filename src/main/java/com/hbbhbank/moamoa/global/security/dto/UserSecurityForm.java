@@ -1,4 +1,4 @@
-package com.hbbhbank.moamoa.user.projection;
+package com.hbbhbank.moamoa.global.security.dto;
 
 import com.hbbhbank.moamoa.user.domain.ERole;
 

@@ -12,14 +12,12 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 
 @Slf4j
-@Component // Spring 빈으로 등록됨 → SecurityConfig에 자동 적용 가능
+@Component
 public class CustomLogoutResultHandler implements LogoutSuccessHandler {
 
-  /**
-   * 로그아웃 성공 후 실행되는 메서드.
-   * 내부적으로 로그아웃 처리는 LogoutHandler에서 이미 수행되었으며,
-   * 여기서는 그 결과를 클라이언트에게 응답하는 역할만 담당.
-   */
+  // 로그아웃 성공 후 실행되는 메서드.
+  // 내부적으로 로그아웃 처리는 LogoutHandler에서 이미 수행되었으며,
+  // 여기서는 그 결과를 클라이언트에게 응답하는 역할만 담당.
   @Override
   public void onLogoutSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException {
 
