@@ -26,10 +26,10 @@ public class Recharge {
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "wallet_id", nullable = false)
-  private Wallet wallet;
+  private Wallet wallet; // 충전할 지갑 정보
 
   @Column(name = "recharge_amount", nullable = false)
-  private BigDecimal amount;
+  private BigDecimal amount; // 충전할 돈
 
   @Enumerated(EnumType.STRING)
   @Column(name = "recharge_method", nullable = false)
@@ -37,16 +37,16 @@ public class Recharge {
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "user_account_link_id", nullable = false)
-  private UserAccountLink accountLink;
+  private UserAccountLink accountLink; // 환비 API와 연결된 계좌 정보
 
   @Column(name = "recharged_at", nullable = false)
-  private LocalDateTime rechargedAt;
+  private LocalDateTime rechargedAt; // 충전 완료 시각
 
   @Column(name = "exchange_rate", precision = 18, scale = 8)
-  private BigDecimal exchangeRate;
+  private BigDecimal exchangeRate; // 외화일 경우만 기록, 환비 API에서 가져옴
 
   @Column(name = "fee", precision = 18, scale = 8)
-  private BigDecimal fee;
+  private BigDecimal fee; // 외화일 경우만 기록, 환비 API에서 가져옴
 
   @Builder
   public Recharge(Wallet wallet, BigDecimal amount, RechargeMethod method,
