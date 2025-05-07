@@ -29,13 +29,17 @@ public class UserAccountLink { // 유저와 환비 API 실 계좌 연결 정보
   @Column(name = "external_bank_account_id", nullable = false)
   private String externalBankAccountId; // 환비 API
 
+  @Column(name = "external_bank_account_number", nullable = false)
+  private String externalBankAccountNumber; // 환비 API
+
   @Column(name = "is_primary", nullable = false)
   private boolean isPrimary; // 자동 충전 시 사용될 우선 계좌
 
   @Builder
-  public UserAccountLink(User user, String externalBankAccountId, boolean isPrimary) {
+  public UserAccountLink(User user, String externalBankAccountId, String externalBankAccountNumber, boolean isPrimary) {
     this.user = user;
     this.externalBankAccountId = externalBankAccountId;
+    this.externalBankAccountNumber = externalBankAccountNumber;
     this.isPrimary = isPrimary;
   }
 }
