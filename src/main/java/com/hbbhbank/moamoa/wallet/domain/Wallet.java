@@ -8,6 +8,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.DynamicUpdate;
 
+import java.math.BigDecimal;
+
 @Getter
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -33,22 +35,14 @@ public class Wallet {
   private Currency currency;
 
   @Column(name = "balance", nullable = false)
-  private Long balance; // 단위: 포인트
+  private BigDecimal balance; // 단위: 포인트
 
   @Builder
-  public Wallet(User user, String accountNumber, Currency currency, Long balance) {
+  public Wallet(User user, String accountNumber, Currency currency, BigDecimal balance) {
     this.user = user;
     this.accountNumber = accountNumber;
     this.currency = currency;
     this.balance = balance;
-  }
-
-  public void increaseBalance(Long amount) {
-    this.balance += amount;
-  }
-
-  public void decreaseBalance(Long amount) {
-    this.balance -= amount;
   }
 }
 
