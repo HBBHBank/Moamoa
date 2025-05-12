@@ -6,7 +6,7 @@ import lombok.NoArgsConstructor;
 import java.util.List;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
-public final class AuthConstant {
+public final class Constants {
 
   public static final String CLAIM_USER_ID = "uuid";
   public static final String CLAIM_USER_ROLE = "role";
@@ -18,5 +18,7 @@ public final class AuthConstant {
     "/api/v1/auth/signup",
     "/api/v1/auth/login"
   );
+
+  public static final String MOAMOA_ACCOUNT = "130-999-888888"; // 모아모아 법인 계좌 번호
 }
 

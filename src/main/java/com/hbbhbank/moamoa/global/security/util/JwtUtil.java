@@ -1,6 +1,6 @@
 package com.hbbhbank.moamoa.global.security.util;
 
-import com.hbbhbank.moamoa.global.constant.AuthConstant;
+import com.hbbhbank.moamoa.global.constant.Constants;
 import com.hbbhbank.moamoa.global.exception.BaseException;
 import com.hbbhbank.moamoa.global.exception.GlobalErrorCode;
 import com.hbbhbank.moamoa.global.security.info.JwtInfo;
@@ -80,8 +80,8 @@ public class JwtUtil {
   // 공통 토큰 생성 로직
   private String generateToken(Long id, ERole role, long expiration, String tokenType) {
     Claims claims = Jwts.claims();
-    claims.put(AuthConstant.CLAIM_USER_ID, id);
-    if (role != null) claims.put(AuthConstant.CLAIM_USER_ROLE, role);
+    claims.put(Constants.CLAIM_USER_ID, id);
+    if (role != null) claims.put(Constants.CLAIM_USER_ROLE, role);
     claims.put("tokenType", tokenType);
 
     Date now = new Date();
@@ -104,8 +104,8 @@ public class JwtUtil {
   // 클레임에서 사용자 정보 추출
   public JwtUserInfo extractUserInfo(String token) {
     Claims claims = parseClaims(token);
-    Long userId = claims.get(AuthConstant.CLAIM_USER_ID, Long.class);
-    String roleStr = claims.get(AuthConstant.CLAIM_USER_ROLE, String.class);
+    Long userId = claims.get(Constants.CLAIM_USER_ID, Long.class);
+    String roleStr = claims.get(Constants.CLAIM_USER_ROLE, String.class);
 
     if (userId == null || roleStr == null) {
       throw new BaseException(GlobalErrorCode.INVALID_JWT_PAYLOAD);

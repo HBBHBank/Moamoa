@@ -1,6 +1,6 @@
 package com.hbbhbank.moamoa.global.security.config;
 
-import com.hbbhbank.moamoa.global.constant.AuthConstant;
+import com.hbbhbank.moamoa.global.constant.Constants;
 import com.hbbhbank.moamoa.global.security.handler.CustomAccessDeniedHandler;
 import com.hbbhbank.moamoa.global.security.handler.CustomAuthenticationEntryPointHandler;
 import com.hbbhbank.moamoa.global.security.handler.CustomLogoutProcessHandler;
@@ -62,7 +62,7 @@ public class SecurityConfig {
         sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
       .authorizeHttpRequests(auth -> auth
-        .requestMatchers(AuthConstant.NOT_NEED_AUTH.toArray(String[]::new)).permitAll() // 인증 없이 접근 가능한 URL 목록 허용
+        .requestMatchers(Constants.NOT_NEED_AUTH.toArray(String[]::new)).permitAll() // 인증 없이 접근 가능한 URL 목록 허용
         .requestMatchers(PathRequest.toStaticResources().atCommonLocations()).permitAll() // 정적 리소스(js, css 등) 허용
         .requestMatchers("/api/v1/**").hasAnyRole("USER") // ROLE_USER 권한을 가진 사용자만 접근 가능
         .anyRequest().authenticated() // 위의 예외를 제외한 모든 요청은 인증 필요

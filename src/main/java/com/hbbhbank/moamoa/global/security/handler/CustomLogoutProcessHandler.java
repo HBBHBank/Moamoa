@@ -1,6 +1,6 @@
 package com.hbbhbank.moamoa.global.security.handler;
 
-import com.hbbhbank.moamoa.global.constant.AuthConstant;
+import com.hbbhbank.moamoa.global.constant.Constants;
 import com.hbbhbank.moamoa.global.exception.BaseException;
 import com.hbbhbank.moamoa.global.exception.GlobalErrorCode;
 import com.hbbhbank.moamoa.global.security.service.JwtTokenService;
@@ -41,7 +41,7 @@ public class CustomLogoutProcessHandler implements LogoutHandler {
     Claims claims = parseTokenClaims(accessToken);
 
     // Claims에서 사용자 ID를 꺼냄 (Long 타입으로 저장되었다고 가정)
-    Long userId = claims.get(AuthConstant.CLAIM_USER_ID, Long.class);
+    Long userId = claims.get(Constants.CLAIM_USER_ID, Long.class);
 
     // 해당 사용자에 대한 RefreshToken 삭제 (Redis 등에서)
     jwtTokenService.deleteRefreshToken(userId);
@@ -52,7 +52,7 @@ public class CustomLogoutProcessHandler implements LogoutHandler {
 
   // 액세스 토큰을 HTTP 요청 헤더에서 추출하는 유틸 메서드
   private String resolveAccessToken(HttpServletRequest request) {
-    return HeaderUtil.refineHeader(request, AuthConstant.PREFIX_AUTH, AuthConstant.PREFIX_BEARER)
+    return HeaderUtil.refineHeader(request, Constants.PREFIX_AUTH, Constants.PREFIX_BEARER)
       .orElseThrow(() -> new BaseException(GlobalErrorCode.INVALID_HEADER_VALUE));
   }
 

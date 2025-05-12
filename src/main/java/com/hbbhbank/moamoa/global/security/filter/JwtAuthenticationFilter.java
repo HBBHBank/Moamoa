@@ -1,6 +1,6 @@
 package com.hbbhbank.moamoa.global.security.filter;
 
-import com.hbbhbank.moamoa.global.constant.AuthConstant;
+import com.hbbhbank.moamoa.global.constant.Constants;
 import com.hbbhbank.moamoa.global.exception.BaseException;
 import com.hbbhbank.moamoa.global.exception.GlobalErrorCode;
 import com.hbbhbank.moamoa.global.security.exception.AuthErrorCode;
@@ -31,7 +31,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
   // 인증이 필요 없는 URI는 필터 적용 제외
   @Override
   protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
-    return AuthConstant.NOT_NEED_AUTH.contains(request.getRequestURI());
+    return Constants.NOT_NEED_AUTH.contains(request.getRequestURI());
   }
 
   @Override
@@ -40,7 +40,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                   FilterChain filterChain) throws ServletException, IOException {
 
     // 요청 헤더에서 "Authorization" 값을 추출하고 "Bearer " 접두사 제거
-    String token = HeaderUtil.refineHeader(request, AuthConstant.PREFIX_AUTH, AuthConstant.PREFIX_BEARER)
+    String token = HeaderUtil.refineHeader(request, Constants.PREFIX_AUTH, Constants.PREFIX_BEARER)
       .orElseThrow(() -> new BaseException(GlobalErrorCode.INVALID_HEADER_VALUE));
 
     // AccessToken만 인증 허용

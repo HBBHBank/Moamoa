@@ -1,6 +1,6 @@
 package com.hbbhbank.moamoa.global.security.filter;
 
-import com.hbbhbank.moamoa.global.constant.AuthConstant;
+import com.hbbhbank.moamoa.global.constant.Constants;
 import com.hbbhbank.moamoa.global.exception.BaseException;
 import com.hbbhbank.moamoa.global.exception.ErrorCode;
 import com.hbbhbank.moamoa.global.exception.GlobalErrorCode;
@@ -25,7 +25,7 @@ public class JwtExceptionFilter extends OncePerRequestFilter {
   // 인증이 필요 없는 URI에 대해서는 필터 적용 제외
   @Override
   protected boolean shouldNotFilter(HttpServletRequest request) {
-    return AuthConstant.NOT_NEED_AUTH.contains(request.getRequestURI());
+    return Constants.NOT_NEED_AUTH.contains(request.getRequestURI());
   }
 
   // JWT 인증 과정에서 발생하는 예외를 잡아 request에 설정
