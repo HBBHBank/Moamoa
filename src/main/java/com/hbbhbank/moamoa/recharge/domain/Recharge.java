@@ -42,22 +42,13 @@ public class Recharge {
   @Column(name = "recharged_at", nullable = false)
   private LocalDateTime rechargedAt; // 충전 완료 시각
 
-  @Column(name = "exchange_rate", precision = 18, scale = 8)
-  private BigDecimal exchangeRate; // 외화일 경우만 기록, 환비 API에서 가져옴
-
-  @Column(name = "fee", precision = 18, scale = 8)
-  private BigDecimal fee; // 외화일 경우만 기록, 환비 API에서 가져옴
-
   @Builder
   public Recharge(Wallet wallet, BigDecimal amount, RechargeMethod method,
-                  UserAccountLink accountLink, LocalDateTime rechargedAt,
-                  BigDecimal exchangeRate, BigDecimal fee) {
+                  UserAccountLink accountLink, LocalDateTime rechargedAt) {
     this.wallet = wallet;
     this.amount = amount;
     this.method = method;
     this.accountLink = accountLink;
     this.rechargedAt = rechargedAt;
-    this.exchangeRate = exchangeRate;
-    this.fee = fee;
   }
 }
