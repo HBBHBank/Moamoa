@@ -41,19 +41,5 @@ public class Currency {
     this.isForeign = isForeign;
     this.defaultAutoChargeUnit = defaultAutoChargeUnit;
   }
-
-  // 충전 단위를 통화 코드 기반으로 설정하는 정적 메서드
-  public static BigDecimal resolveDefaultRechargeUnit(String currencyCode) {
-    return switch (currencyCode) {
-      case "KRW" -> BigDecimal.valueOf(10_000);
-      case "USD" -> BigDecimal.valueOf(10);
-      case "EUR" -> BigDecimal.valueOf(10);
-      case "JPY" -> BigDecimal.valueOf(1_000);
-      case "CNY" -> BigDecimal.valueOf(50);
-      case "VND" -> BigDecimal.valueOf(200_000);
-      case "INR" -> BigDecimal.valueOf(800);
-      default -> throw BaseException.type(WalletErrorCode.CURRENCY_CODE_NOT_FOUND);
-    };
-  }
 }
 
