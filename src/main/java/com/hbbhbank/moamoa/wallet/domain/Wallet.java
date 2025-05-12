@@ -1,5 +1,6 @@
 package com.hbbhbank.moamoa.wallet.domain;
 
+import com.hbbhbank.moamoa.external.domain.UserAccountLink;
 import com.hbbhbank.moamoa.user.domain.User;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -37,12 +38,21 @@ public class Wallet {
   @Column(name = "balance", nullable = false)
   private BigDecimal balance; // 단위: 포인트
 
+  @OneToOne(fetch = FetchType.LAZY, optional = false)
+  @JoinColumn(name = "user_account_link_id", unique = true)
+  private UserAccountLink accountLink;
+
   @Builder
-  public Wallet(User user, String accountNumber, Currency currency, BigDecimal balance) {
+  public Wallet(User user, String accountNumber, Currency currency, BigDecimal balance, UserAccountLink accountLink) {
     this.user = user;
     this.accountNumber = accountNumber;
     this.currency = currency;
     this.balance = balance;
+    this.accountLink = accountLink;
+  }
+
+  public void updateBalance(BigDecimal amount) {
+    this.balance = this.balance.add(amount);
   }
 }
 

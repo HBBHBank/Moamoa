@@ -7,6 +7,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.DynamicUpdate;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Getter
@@ -24,15 +25,16 @@ public class WalletTransaction {
   @JoinColumn(name = "wallet_id", nullable = false)
   private Wallet wallet;
 
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "counter_wallet_id") // 거래 상대방 지갑
+  private Wallet counterWallet;
+
   @Enumerated(EnumType.STRING)
   @Column(name = "transaction_type", nullable = false)
   private WalletTransactionType type; // PAYMENT, AUTO_CHARGE, MANUAL_CHARGE, SETTLEMENT_SEND, SETTLEMENT_RECEIVE
 
   @Column(name = "transaction_amount", nullable = false)
-  private Long amount; // 양수: 입금, 음수: 출금
-
-  @Column(name = "description", length = 255)
-  private String description;
+  private BigDecimal amount; // 양수: 입금, 음수: 출금
 
   @Column(name = "included_in_settlement", nullable = false)
   private boolean includedInSettlement = false; // 정산 그룹에서 공유 여부
@@ -41,12 +43,12 @@ public class WalletTransaction {
   private LocalDateTime transactedAt; // 거래 일시
 
   @Builder
-  public WalletTransaction(Wallet wallet, WalletTransactionType type, Long amount,
-                           String description, boolean includedInSettlement, LocalDateTime transactedAt) {
+  public WalletTransaction(Wallet wallet, Wallet counterWallet, WalletTransactionType type,
+                           BigDecimal amount, boolean includedInSettlement, LocalDateTime transactedAt) {
     this.wallet = wallet;
+    this.counterWallet = counterWallet;
     this.type = type;
     this.amount = amount;
-    this.description = description;
     this.includedInSettlement = includedInSettlement;
     this.transactedAt = transactedAt;
   }
