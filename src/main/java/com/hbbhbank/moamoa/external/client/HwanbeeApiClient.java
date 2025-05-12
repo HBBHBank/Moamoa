@@ -12,11 +12,14 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 @Component
-@RequiredArgsConstructor
 public class HwanbeeApiClient {
 
   @Qualifier("hwanbeeRestTemplate")
-  private final RestTemplate restTemplate;
+  private RestTemplate restTemplate;
+
+  public HwanbeeApiClient(@Qualifier("hwanbeeRestTemplate") RestTemplate restTemplate) {
+    this.restTemplate = restTemplate;
+  }
 
   public <T> BaseResponse<T> postForBaseResponse(
     String url,

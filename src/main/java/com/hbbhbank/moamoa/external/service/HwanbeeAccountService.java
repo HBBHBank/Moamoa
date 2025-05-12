@@ -36,7 +36,6 @@ public class HwanbeeAccountService {
 
     // 2) 현재 로그인 유저 정보 얻기
     Long userId = SecurityUtil.getCurrentUserId();
-    // (필요 시: User user = userRepository.findById(userId).orElseThrow(...);)
 
     // 3) 저장할 엔티티 빌드
     UserAccountLink link = UserAccountLink.builder()
