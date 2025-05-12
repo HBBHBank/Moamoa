@@ -10,13 +10,13 @@ import lombok.*;
 @AllArgsConstructor
 @Embeddable
 public class TermsAgreement {
-  @Column(name="serviceTermsAgreed", nullable = false)
+  @Column(name="service_terms_agreed", nullable = false)
   private boolean serviceTermsAgreed;
 
-  @Column(name="privacyPolicyAgreed", nullable = false)
+  @Column(name="privacy_policy_agreed", nullable = false)
   private boolean privacyPolicyAgreed;
 
-  @Column(name="marketingAgreed", nullable = false)
+  @Column(name="marketing_agreed", nullable = false)
   private boolean marketingAgreed; // 선택 사항
 }
 
