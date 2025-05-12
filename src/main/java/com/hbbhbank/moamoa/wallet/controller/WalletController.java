@@ -47,10 +47,10 @@ public class WalletController {
    * 특정 통화의 사용자 가상 지갑 정보 조회
    */
   @GetMapping
-  public ResponseEntity<BaseResponse> showWallet(
-    @RequestBody WalletInquiryRequestDto requestDto) {
-    WalletInquiryResponseDto responseDto = walletService.showWallet(requestDto);
-    return ResponseEntity.ok(BaseResponse.success(responseDto));
+  public ResponseEntity<BaseResponse> showWallet(@RequestParam String currencyCode) {
+    WalletInquiryRequestDto dto = new WalletInquiryRequestDto(currencyCode);
+    WalletInquiryResponseDto response = walletService.showWallet(dto);
+    return ResponseEntity.ok(BaseResponse.success(response));
   }
 
   /**
