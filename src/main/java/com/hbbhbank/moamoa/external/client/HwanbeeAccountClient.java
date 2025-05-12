@@ -7,16 +7,21 @@ import com.hbbhbank.moamoa.external.exception.HwanbeeErrorCode;
 import com.hbbhbank.moamoa.global.common.BaseResponse;
 import com.hbbhbank.moamoa.global.exception.BaseException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
 @Component
-@RequiredArgsConstructor
 public class HwanbeeAccountClient {
 
+  @Qualifier("hwanbeeRestTemplate")
   private final RestTemplate restTemplate;
+
+  public HwanbeeAccountClient(@Qualifier("hwanbeeRestTemplate") RestTemplate restTemplate) {
+    this.restTemplate = restTemplate;
+  }
 
   @Value("${hwanbee.verification-code-url}")
   private String verificationCodeUrl;
