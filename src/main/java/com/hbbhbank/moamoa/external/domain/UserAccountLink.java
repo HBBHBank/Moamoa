@@ -1,6 +1,5 @@
 package com.hbbhbank.moamoa.external.domain;
 
-import com.hbbhbank.moamoa.user.domain.User;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -22,19 +21,18 @@ public class UserAccountLink { // 유저와 환비 API 실 계좌 연결 정보
   @Column(name = "user_account_link_id")
   private Long id;
 
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "user_id", nullable = false)
-  private User user;
+  @Column(name = "user_id", nullable = false)
+  private Long userId;
 
-  @Column(name = "external_bank_account_id", nullable = false)
+  @Column(name = "external_bank_account_id")
   private String externalBankAccountId; // 환비 API
 
   @Column(name = "external_bank_account_number", nullable = false)
   private String externalBankAccountNumber; // 환비 API
 
   @Builder
-  public UserAccountLink(User user, String externalBankAccountId, String externalBankAccountNumber) {
-    this.user = user;
+  public UserAccountLink(Long userId, String externalBankAccountId, String externalBankAccountNumber) {
+    this.userId = userId;
     this.externalBankAccountId = externalBankAccountId;
     this.externalBankAccountNumber = externalBankAccountNumber;
   }

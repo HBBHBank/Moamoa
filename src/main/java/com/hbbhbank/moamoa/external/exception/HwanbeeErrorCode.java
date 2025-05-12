@@ -19,7 +19,11 @@ public enum HwanbeeErrorCode implements ErrorCode {
   ACCOUNT_LINK_FAILED(HttpStatus.BAD_GATEWAY, "HWANBEE_005", "계좌 연결 중 오류가 발생했습니다."),
 
   // 토큰 관련
-  TOKEN_REQUEST_FAILED(HttpStatus.BAD_GATEWAY, "HWANBEE_006", "환비 토큰 발급에 실패했습니다.");
+  TOKEN_REQUEST_FAILED(HttpStatus.BAD_GATEWAY, "HWANBEE_006", "환비 토큰 발급에 실패했습니다."),
+
+  // 이체 관련
+  WITHDRAWAL_FAILED(HttpStatus.BAD_GATEWAY, "HWANBEE_007", "출금 요청에 실패했습니다."),
+  DEPOSIT_FAILED(HttpStatus.BAD_GATEWAY, "HWANBEE_008", "입금 요청에 실패했습니다.");
 
   private final HttpStatus status;
   private final String errorCode;

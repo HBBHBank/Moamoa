@@ -1,8 +1,8 @@
 package com.hbbhbank.moamoa.external.dto.request;
 
-public record VerificationCheckRequestDto(
-  Long userId, 
+public record GenerateVerificationCodeRequestDto(
+  Long userId,
   String externalBankAccountNumber,
-  String verificationCode
+  String currencyCode
 ) {
 }

@@ -2,20 +2,16 @@ package com.hbbhbank.moamoa.external.service;
 
 import com.hbbhbank.moamoa.external.client.HwanbeeAccountClient;
 import com.hbbhbank.moamoa.external.domain.UserAccountLink;
+import com.hbbhbank.moamoa.external.dto.request.GenerateVerificationCodeRequestDto;
 import com.hbbhbank.moamoa.external.dto.request.VerificationCheckRequestDto;
-import com.hbbhbank.moamoa.external.dto.request.VerificationCodeRequestDto;
+import com.hbbhbank.moamoa.external.dto.response.VerificationCheckResponseDto;
 import com.hbbhbank.moamoa.external.dto.response.VerificationCodeResponseDto;
-import com.hbbhbank.moamoa.external.exception.HwanbeeErrorCode;
 import com.hbbhbank.moamoa.external.repository.HwanbeeLinkRepository;
-import com.hbbhbank.moamoa.global.exception.BaseException;
-import com.hbbhbank.moamoa.user.domain.User;
+import com.hbbhbank.moamoa.global.security.util.SecurityUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * 사용자 계좌 인증 및 연결 비즈니스 로직 담당 서비스
- */
 @Service
 @RequiredArgsConstructor
 public class HwanbeeAccountService {
@@ -24,33 +20,33 @@ public class HwanbeeAccountService {
   private final HwanbeeLinkRepository hwanbeeLinkRepository;
 
   /**
-   * 인증 코드 발급 요청 후 사용자에게 반환
+   * 인증 코드 발급 후 바로 반환
    */
-  public String generateVerificationCode(User user, String currency, String accountNumber) {
-    VerificationCodeRequestDto requestDto = new VerificationCodeRequestDto(user.getId(), currency, accountNumber);
-    VerificationCodeResponseDto responseDto = hwanbeeAccountClient.requestVerificationCode(requestDto);
-    return responseDto.verificationCode();
+  public VerificationCodeResponseDto generateVerificationCode(GenerateVerificationCodeRequestDto dto) {
+    return hwanbeeAccountClient.requestVerificationCode(dto);
   }
-
 
   /**
-   * 인증 코드 검증 후 계좌 정보를 DB에 저장
+   * 인증 코드 검사 후 성공 시 계좌 연결 정보 저장
    */
   @Transactional
-  public UserAccountLink verifyAndLinkAccount(User user, String accountNumber, String verificationCode) {
-    VerificationCheckRequestDto requestDto = new VerificationCheckRequestDto(user.getId(), accountNumber, verificationCode);
-    boolean verified = hwanbeeAccountClient.verifyDepositCode(requestDto);
+  public UserAccountLink verifyAndLinkAccount(VerificationCheckRequestDto dto) {
+    // 1) 환비 API 호출 → 성공하면 DTO 반환, 아니면 예외
+    VerificationCheckResponseDto resp = hwanbeeAccountClient.verifyDepositCode(dto);
 
-    if (!verified) {
-      throw BaseException.type(HwanbeeErrorCode.ACCOUNT_VERIFICATION_FAILED);
-    }
+    // 2) 현재 로그인 유저 정보 얻기
+    Long userId = SecurityUtil.getCurrentUserId();
+    // (필요 시: User user = userRepository.findById(userId).orElseThrow(...);)
 
+    // 3) 저장할 엔티티 빌드
     UserAccountLink link = UserAccountLink.builder()
-      .user(user)
-      .externalBankAccountId("HWB-FOREIGN")
-      .externalBankAccountNumber(accountNumber)
+      .userId(userId)
+      .externalBankAccountId(resp.externalBankAccountId())
+      .externalBankAccountNumber(dto.externalBankAccountNumber())
       .build();
 
+    // 4) DB 저장 후 반환
     return hwanbeeLinkRepository.save(link);
   }
+
 }

@@ -1,7 +1,6 @@
 package com.hbbhbank.moamoa.wallet.domain;
 
 import com.hbbhbank.moamoa.global.exception.BaseException;
-import com.hbbhbank.moamoa.user.exception.UserErrorCode;
 import com.hbbhbank.moamoa.wallet.exception.WalletErrorCode;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

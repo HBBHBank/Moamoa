@@ -9,10 +9,10 @@ import java.math.BigDecimal;
 
 public record CreateWalletTransactionRequestDto(
 
-  @NotNull(message = "지갑 정보는 필수입니다.")
-  Wallet wallet,
+  @NotNull(message = "지갑 ID는 필수입니다.")
+  Long walletId,
 
-  Wallet counterWallet, // 출금일 경우 서비스 단에서 null 체크
+  Long counterWalletId,
 
   @NotNull(message = "거래 유형은 필수입니다.")
   WalletTransactionType type,
