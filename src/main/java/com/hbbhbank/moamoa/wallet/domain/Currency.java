@@ -1,5 +1,8 @@
 package com.hbbhbank.moamoa.wallet.domain;
 
+import com.hbbhbank.moamoa.global.exception.BaseException;
+import com.hbbhbank.moamoa.user.exception.UserErrorCode;
+import com.hbbhbank.moamoa.wallet.exception.WalletErrorCode;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -8,6 +11,8 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+
+import java.math.BigDecimal;
 
 @Getter
 @Entity
@@ -28,16 +33,28 @@ public class Currency {
   private boolean isForeign; // 외화 여부 (→ 수수료 발생 여부)
 
   @Column(name = "default_auto_charge_unit", nullable = false)
-  private Long defaultAutoChargeUnit; // 자동충전 단위 (ex. KRW: 10000, USD: 10 등)
+  private BigDecimal defaultAutoChargeUnit; // 자동충전 단위 (ex. KRW: 10000, USD: 10 등)
 
   @Builder
-  public Currency(String code, String name, boolean isForeign, Long defaultAutoChargeUnit) {
+  public Currency(String code, String name, boolean isForeign, BigDecimal defaultAutoChargeUnit) {
     this.code = code;
     this.name = name;
     this.isForeign = isForeign;
     this.defaultAutoChargeUnit = defaultAutoChargeUnit;
   }
 
-  // 환비 API에서 환율/수수료 조회하여 사용
+  // 충전 단위를 통화 코드 기반으로 설정하는 정적 메서드
+  public static BigDecimal resolveDefaultRechargeUnit(String currencyCode) {
+    return switch (currencyCode) {
+      case "KRW" -> BigDecimal.valueOf(10_000);
+      case "USD" -> BigDecimal.valueOf(10);
+      case "EUR" -> BigDecimal.valueOf(10);
+      case "JPY" -> BigDecimal.valueOf(1_000);
+      case "CNY" -> BigDecimal.valueOf(50);
+      case "VND" -> BigDecimal.valueOf(200_000);
+      case "INR" -> BigDecimal.valueOf(800);
+      default -> throw BaseException.type(WalletErrorCode.CURRENCY_CODE_NOT_FOUND);
+    };
+  }
 }
 
