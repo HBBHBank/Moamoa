@@ -8,6 +8,7 @@ import com.hbbhbank.moamoa.wallet.dto.request.CreateWalletTransactionRequestDto;
 import com.hbbhbank.moamoa.wallet.dto.request.WalletInquiryRequestDto;
 import com.hbbhbank.moamoa.wallet.dto.response.WalletTransactionResponseDto;
 import com.hbbhbank.moamoa.wallet.exception.WalletErrorCode;
+import com.hbbhbank.moamoa.wallet.repository.WalletRepository;
 import com.hbbhbank.moamoa.wallet.repository.WalletTransactionRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -15,6 +16,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -23,7 +25,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.any;
 
 @ExtendWith(MockitoExtension.class)
 class WalletTransactionServiceTest {
@@ -34,19 +36,26 @@ class WalletTransactionServiceTest {
   @Mock
   private WalletTransactionRepository walletTransactionRepository;
 
+  @Mock
+  private WalletRepository walletRepository;
+
   @Test
   @DisplayName("거래 내역 생성 성공")
   void should_record_transaction_successfully() {
     // given
-    Wallet wallet = Wallet.builder().balance(BigDecimal.ZERO).build();
+    Long walletId = 1L;
     CreateWalletTransactionRequestDto req = new CreateWalletTransactionRequestDto(
-      wallet,
+      walletId,
       null,
       WalletTransactionType.WITHDRAWAL,
       BigDecimal.valueOf(1000),
       false
     );
 
+    Wallet mockWallet = Wallet.builder().balance(BigDecimal.ZERO).build();
+    ReflectionTestUtils.setField(mockWallet, "id", walletId);
+
+    given(walletRepository.getReferenceById(walletId)).willReturn(mockWallet);
     given(walletTransactionRepository.save(any(WalletTransaction.class)))
       .willAnswer(invocation -> invocation.getArgument(0));
 
