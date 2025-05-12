@@ -6,7 +6,6 @@ import com.hbbhbank.moamoa.external.dto.response.VerificationCodeResponseDto;
 import com.hbbhbank.moamoa.external.exception.HwanbeeErrorCode;
 import com.hbbhbank.moamoa.global.common.BaseResponse;
 import com.hbbhbank.moamoa.global.exception.BaseException;
-import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;

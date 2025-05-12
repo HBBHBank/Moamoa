@@ -2,8 +2,6 @@ package com.hbbhbank.moamoa.external.config;
 
 import com.hbbhbank.moamoa.external.client.HwanbeeAuthInterceptor;
 import com.hbbhbank.moamoa.external.service.HwanbeeTokenService;
-import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
