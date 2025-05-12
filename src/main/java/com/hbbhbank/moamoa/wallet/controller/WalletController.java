@@ -1,11 +1,13 @@
 package com.hbbhbank.moamoa.wallet.controller;
 
+import com.hbbhbank.moamoa.external.dto.request.GenerateVerificationCodeRequestDto;
+import com.hbbhbank.moamoa.external.dto.response.VerificationCodeResponseDto;
+import com.hbbhbank.moamoa.global.common.BaseResponse;
 import com.hbbhbank.moamoa.wallet.dto.request.CreateWalletRequestDto;
 import com.hbbhbank.moamoa.wallet.dto.request.WalletInquiryRequestDto;
 import com.hbbhbank.moamoa.wallet.dto.response.WalletInquiryResponseDto;
 import com.hbbhbank.moamoa.wallet.dto.response.WalletResponseDto;
 import com.hbbhbank.moamoa.wallet.service.WalletService;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -20,35 +22,44 @@ public class WalletController {
   private final WalletService walletService;
 
   /**
-   * 지갑 생성
+   * 가상 지갑 생성 전 외부 실계좌 인증코드 발급 요청
+   * 환비 계좌 API를 통해 1회성 입금 인증코드를 발급
+   */
+  @PostMapping("/verification-code")
+  public ResponseEntity<BaseResponse> generateVerificationCode(
+    @RequestBody GenerateVerificationCodeRequestDto requestDto) {
+    VerificationCodeResponseDto responseDto = walletService.requestVerificationCode(requestDto);
+    return ResponseEntity.ok(BaseResponse.success(responseDto));
+  }
+
+  /**
+   * 외부 계좌 인증 확인 후 사용자 가상 지갑 생성
+   * 사용자가 인증코드로 입금한 후, 이를 검증하여 가상 지갑을 생성
    */
   @PostMapping
-  public ResponseEntity<WalletResponseDto> createWallet(
-    @Valid @RequestBody CreateWalletRequestDto req
-  ) {
-    WalletResponseDto response = walletService.createWallet(req);
-    return ResponseEntity.ok(response);
+  public ResponseEntity<BaseResponse> createWallet(
+    @RequestBody CreateWalletRequestDto requestDto) {
+    WalletResponseDto responseDto = walletService.createWallet(requestDto);
+    return ResponseEntity.ok(BaseResponse.success(responseDto));
   }
 
   /**
-   * 사용자의 전체 지갑 목록 조회
+   * 특정 통화의 사용자 가상 지갑 정보 조회
    */
   @GetMapping
-  public ResponseEntity<List<WalletInquiryResponseDto>> getAllWalletsByUser() {
-    List<WalletInquiryResponseDto> response = walletService.getAllWalletsByUser();
-    return ResponseEntity.ok(response);
+  public ResponseEntity<BaseResponse> showWallet(
+    @RequestBody WalletInquiryRequestDto requestDto) {
+    WalletInquiryResponseDto responseDto = walletService.showWallet(requestDto);
+    return ResponseEntity.ok(BaseResponse.success(responseDto));
   }
 
   /**
-   * 특정 통화의 지갑 정보 조회
+   * 사용자의 모든 통화별 가상 지갑 목록 조회
    */
-  @GetMapping("/currency")
-  public ResponseEntity<WalletInquiryResponseDto> showWalletByCurrency(
-    @RequestParam String currencyCode
-  ) {
-    WalletInquiryRequestDto req = new WalletInquiryRequestDto(currencyCode);
-    WalletInquiryResponseDto response = walletService.showWallet(req);
-    return ResponseEntity.ok(response);
+  @GetMapping("/all")
+  public ResponseEntity<BaseResponse> getAllWallets() {
+    List<WalletInquiryResponseDto> responseDtos = walletService.getAllWalletsByUser();
+    return ResponseEntity.ok(BaseResponse.success(responseDtos));
   }
 
 }

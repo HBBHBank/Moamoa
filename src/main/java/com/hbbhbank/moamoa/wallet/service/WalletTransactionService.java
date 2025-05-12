@@ -1,11 +1,13 @@
 package com.hbbhbank.moamoa.wallet.service;
 
 import com.hbbhbank.moamoa.global.exception.BaseException;
+import com.hbbhbank.moamoa.wallet.domain.Wallet;
 import com.hbbhbank.moamoa.wallet.domain.WalletTransaction;
 import com.hbbhbank.moamoa.wallet.dto.request.CreateWalletTransactionRequestDto;
 import com.hbbhbank.moamoa.wallet.dto.request.WalletInquiryRequestDto;
 import com.hbbhbank.moamoa.wallet.dto.response.WalletTransactionResponseDto;
 import com.hbbhbank.moamoa.wallet.exception.WalletErrorCode;
+import com.hbbhbank.moamoa.wallet.repository.WalletRepository;
 import com.hbbhbank.moamoa.wallet.repository.WalletTransactionRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +20,7 @@ import java.time.LocalDateTime;
 public class WalletTransactionService {
 
   private final WalletTransactionRepository walletTransactionRepository;
+  private final WalletRepository walletRepository;
 
   // 지갑 별 거래 내역 조회
   public WalletTransaction showWalletTransaction(WalletInquiryRequestDto req) {
@@ -28,9 +31,12 @@ public class WalletTransactionService {
   // 지갑 별 거래 내역 생성 (충전, 송금, 출금, 환전, 정산, 결제 시에 자동 생성)
   @Transactional
   public WalletTransactionResponseDto recordTransaction(CreateWalletTransactionRequestDto req) {
+    Wallet wallet = walletRepository.getReferenceById(req.walletId());
+    Wallet counter = req.counterWalletId() != null ? walletRepository.getReferenceById(req.counterWalletId()) : null;
+
     WalletTransaction tx = WalletTransaction.builder()
-      .wallet(req.wallet())
-      .counterWallet(req.counterWallet())
+      .wallet(wallet)
+      .counterWallet(counter)
       .type(req.type())
       .amount(req.amount())
       .includedInSettlement(req.includedInSettlement())
@@ -39,7 +45,7 @@ public class WalletTransactionService {
 
     walletTransactionRepository.save(tx);
 
-    req.wallet().updateBalance(req.amount());
+    wallet.updateBalance(req.amount());
 
     return WalletTransactionResponseDto.from(tx);
   }
