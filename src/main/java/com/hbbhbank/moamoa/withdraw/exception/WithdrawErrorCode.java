@@ -9,12 +9,11 @@ import org.springframework.http.HttpStatus;
 @RequiredArgsConstructor
 public enum WithdrawErrorCode implements ErrorCode {
 
-  DIRECT_RECHARGE_NOT_ALLOWED_FOR_FOREIGN_CURRENCY(HttpStatus.BAD_REQUEST, "RCG_001", "외화는 직접 충전이 불가능합니다."),
-  EXCHANGE_RATE_FETCH_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "RCG_002", "환율 정보를 불러오는 데 실패했습니다."),
-  FEE_CALCULATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "RCG_003", "수수료 계산에 실패했습니다."),
-  ACCOUNT_LINK_NOT_FOUND(HttpStatus.NOT_FOUND, "RCG_004", "연결된 계좌 정보를 찾을 수 없습니다."),
-  CHARGE_AMOUNT_INVALID(HttpStatus.BAD_REQUEST, "RCG_005", "충전 금액이 유효하지 않습니다."),
-  INVALID_AMOUNT(HttpStatus.BAD_REQUEST, "RCG_006", "충전 금액은 만원 단위여야 합니다.")
+  WALLET_NOT_FOUND(HttpStatus.NOT_FOUND, "WDR_001", "출금할 지갑 정보를 찾을 수 없습니다."),
+  INSUFFICIENT_BALANCE(HttpStatus.BAD_REQUEST, "WDR_002", "출금할 지갑에 잔액이 부족합니다."),
+  ACCOUNT_LINK_NOT_FOUND(HttpStatus.NOT_FOUND, "WDR_003", "연결된 외부 계좌 정보를 찾을 수 없습니다."),
+  TRANSFER_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "WDR_004", "출금 처리 중 오류가 발생했습니다."),
+  INVALID_WITHDRAWAL_AMOUNT(HttpStatus.BAD_REQUEST, "WDR_005", "출금 금액이 유효하지 않습니다.")
   ;
 
   private final HttpStatus status;

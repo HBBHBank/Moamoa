@@ -4,6 +4,7 @@ import com.hbbhbank.moamoa.external.domain.UserAccountLink;
 import com.hbbhbank.moamoa.wallet.domain.Wallet;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.DynamicUpdate;
@@ -37,6 +38,15 @@ public class Withdrawal {
   private WithdrawalStatus status; // PENDING, SUCCESS, FAILED
 
   @Column(name = "withdrawal_at", nullable = false)
-  private LocalDateTime withdrawalAt; // 출금 완료 시각
+  private LocalDateTime withdrawnAt; // 출금 완료 시각
+
+  @Builder
+  public Withdrawal(UserAccountLink userAccountLink, Wallet wallet, BigDecimal amount, WithdrawalStatus status, LocalDateTime withdrawnAt) {
+    this.userAccountLink = userAccountLink;
+    this.wallet = wallet;
+    this.amount = amount;
+    this.status = status;
+    this.withdrawnAt = withdrawnAt;
+  }
 }
 
