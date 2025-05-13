@@ -1,5 +1,6 @@
 package com.hbbhbank.moamoa.user.domain;
 
+import com.hbbhbank.moamoa.user.dto.request.SignUpRequestDto;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 import lombok.*;
@@ -18,5 +19,13 @@ public class TermsAgreement {
 
   @Column(name="marketing_agreed", nullable = false)
   private boolean marketingAgreed; // 선택 사항
+
+  public static TermsAgreement create(SignUpRequestDto dto) {
+    return TermsAgreement.builder()
+      .serviceTermsAgreed(Boolean.TRUE.equals(dto.serviceTermsAgreed()))
+      .privacyPolicyAgreed(Boolean.TRUE.equals(dto.privacyPolicyAgreed()))
+      .marketingAgreed(Boolean.TRUE.equals(dto.marketingAgreed()))
+      .build();
+  }
 }
 

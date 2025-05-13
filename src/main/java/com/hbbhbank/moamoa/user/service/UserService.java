@@ -20,36 +20,48 @@ public class UserService {
   private final UserRepository userRepository;
   private final PasswordEncoder passwordEncoder;
 
+  // 비밀번호 변경
   @Transactional
   public void changePassword(ChangePasswordRequestDto dto) {
     User user = getCurrentUser();
-
-    if (!passwordEncoder.matches(dto.oldPassword(), user.getPassword())) {
-      throw new BaseException(UserErrorCode.INVALID_PASSWORD);
-    }
-
+    user.validatePassword(dto.oldPassword(), passwordEncoder); // 도메인 책임
     user.changePassword(passwordEncoder.encode(dto.newPassword()));
   }
 
+  // 핸드폰 번호 변경
   @Transactional
   public void changePhoneNumber(ChangePhoneRequestDto dto) {
     if (userRepository.existsByPhoneNumber(dto.phoneNumber())) {
-      throw new BaseException(UserErrorCode.INVALID_PHONE);
+      throw BaseException.type(UserErrorCode.INVALID_PHONE);
     }
+
     User user = getCurrentUser();
     user.changePhoneNumber(dto.phoneNumber());
   }
 
+  // 이름 변경
   @Transactional
   public void changeUserName(ChangeNameRequestDto dto) {
     User user = getCurrentUser();
     user.changeUserName(dto.name());
   }
 
-  // 자동으로 Read Only 트랜잭션이 적용됨
+  // 로그인 된 사용자 ID 조회
+  public Long getCurrentUserId() {
+    return SecurityUtil.getCurrentUserId();
+  }
+
+  // 특정 사용자 ID로 사용자 조회
+  public User getByIdOrThrow(Long userId) {
+    return userRepository.findById(userId)
+      .orElseThrow(() -> BaseException.type(UserErrorCode.USER_NOT_FOUND));
+  }
+
+  // 현재 로그인된 사용자 조회
   private User getCurrentUser() {
     Long userId = SecurityUtil.getCurrentUserId();
     return userRepository.findById(userId)
       .orElseThrow(() -> new BaseException(UserErrorCode.USER_NOT_FOUND));
   }
+
 }

@@ -27,27 +27,18 @@ public class AuthService {
 
   @Transactional
   public SignUpResponseDto signUp(SignUpRequestDto dto) {
-    // DTO 유효성 검사
     dto.validate();
 
-    // 이메일, 전화번호 중복 검사
     validateDuplicate(dto.email(), dto.phoneNumber());
 
-    // 유저 생성 및 저장
-    User user = User.builder()
-      .name(dto.name())
-      .email(dto.email())
-      .phoneNumber(dto.phoneNumber())
-      .password(encodePassword(dto.password()))
-      .profileImage(ProfileImage.from(dto.profileImage()))
-      .terms(toTermsAgreement(dto))
-      .role(ERole.USER)
-      .build();
+    String encodedPassword = encodePassword(dto.password());
+    User user = User.create(dto, encodedPassword);
 
     userRepository.save(user);
 
     return SignUpResponseDto.from(user);
   }
+
 
   @Transactional
   public LoginResponseDto login(LoginRequestDto loginRequestDto) {
@@ -77,13 +68,4 @@ public class AuthService {
   private String encodePassword(String rawPassword) {
     return passwordEncoder.encode(rawPassword);
   }
-
-  private TermsAgreement toTermsAgreement(SignUpRequestDto dto) {
-    return TermsAgreement.builder()
-      .serviceTermsAgreed(Boolean.TRUE.equals(dto.serviceTermsAgreed()))
-      .privacyPolicyAgreed(Boolean.TRUE.equals(dto.privacyPolicyAgreed()))
-      .marketingAgreed(Boolean.TRUE.equals(dto.marketingAgreed()))
-      .build();
-  }
-
 }

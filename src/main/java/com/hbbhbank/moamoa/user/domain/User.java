@@ -1,11 +1,15 @@
 package com.hbbhbank.moamoa.user.domain;
 
+import com.hbbhbank.moamoa.global.exception.BaseException;
+import com.hbbhbank.moamoa.user.dto.request.SignUpRequestDto;
+import com.hbbhbank.moamoa.user.exception.UserErrorCode;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.DynamicUpdate;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Getter
 @Entity
@@ -52,6 +56,18 @@ public class User {
     this.role = role;
   }
 
+  public static User create(SignUpRequestDto dto, String encodedPassword) {
+    return User.builder()
+      .name(dto.name())
+      .email(dto.email())
+      .phoneNumber(dto.phoneNumber())
+      .password(encodedPassword)
+      .profileImage(ProfileImage.from(dto.profileImage()))
+      .terms(TermsAgreement.create(dto))
+      .role(ERole.USER)
+      .build();
+  }
+
   // 이름 변경
   public void changeUserName(String name) {
     this.name = name;
@@ -67,4 +83,10 @@ public class User {
     this.password = encodedPassword; // 이미 인코딩된 값만 받음
   }
 
+  // 비밀번호 검증
+  public void validatePassword(String rawPassword, PasswordEncoder encoder) {
+    if (!encoder.matches(rawPassword, this.password)) {
+      throw BaseException.type(UserErrorCode.INVALID_PASSWORD);
+    }
+  }
 }

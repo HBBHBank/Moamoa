@@ -1,5 +1,6 @@
 package com.hbbhbank.moamoa.external.domain;
 
+import com.hbbhbank.moamoa.external.dto.response.VerificationCheckResponseDto;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -39,6 +40,20 @@ public class UserAccountLink { // 유저와 환비 API 실 계좌 연결 정보
     this.externalBankAccountId = externalBankAccountId;
     this.externalBankAccountNumber = externalBankAccountNumber;
     this.currencyCode = currencyCode;
+  }
+
+  public static UserAccountLink create(
+    Long userId,
+    String externalAccountId,
+    String externalAccountNumber,
+    String currencyCode
+  ) {
+    return UserAccountLink.builder()
+      .userId(userId)
+      .externalBankAccountId(externalAccountId)
+      .externalBankAccountNumber(externalAccountNumber)
+      .currencyCode(currencyCode)
+      .build();
   }
 }
 

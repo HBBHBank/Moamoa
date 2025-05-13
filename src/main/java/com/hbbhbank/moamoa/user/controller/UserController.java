@@ -19,19 +19,19 @@ public class UserController {
 
   private final UserService userService;
 
-  @PatchMapping("/me/password")
+  @PatchMapping("/password")
   public ResponseEntity<Void> changePassword(@RequestBody @Valid ChangePasswordRequestDto dto) {
     userService.changePassword(dto);
     return ResponseEntity.ok().build();
   }
 
-  @PatchMapping("/me/phone")
+  @PatchMapping("/phone")
   public ResponseEntity<Void> changePhoneNumber(@RequestBody @Valid ChangePhoneRequestDto dto) {
     userService.changePhoneNumber(dto);
     return ResponseEntity.ok().build();
   }
 
-  @PatchMapping("/me/name")
+  @PatchMapping("/name")
   public ResponseEntity<Void> changeUserName(@RequestBody @Valid ChangeNameRequestDto dto) {
     userService.changeUserName(dto);
     return ResponseEntity.ok().build();
