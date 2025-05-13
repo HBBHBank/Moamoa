@@ -1,15 +1,7 @@
 package com.hbbhbank.moamoa.wallet.domain;
 
-import com.hbbhbank.moamoa.global.exception.BaseException;
-import com.hbbhbank.moamoa.wallet.exception.WalletErrorCode;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
-import lombok.AccessLevel;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import jakarta.persistence.*;
+import lombok.*;
 
 import java.math.BigDecimal;
 
@@ -18,36 +10,45 @@ import java.math.BigDecimal;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table(name = "currencies")
 public class Currency {
+
   @Id
   @Column(name = "currency_code", length = 10)
-  private String code; // KRW, USD, JPY
+  private String code; // 통화 코드 (ex. KRW, USD 등)
 
-  @Column(name = "currency_name", length = 50)
-  private String name; // '대한민국 원화'와 같은 풀네임
+  @Column(name = "currency_name", length = 50, nullable = false)
+  private String name; // '대한민국 원화'와 같은 전체 이름
 
-  // true: 외화, false: 원화
-  // 외화라면, 직접 충전이 불가능함 (환전을 통해서만 충전이 가능. 정책상 그럼.) -> 환전은 환비 API 이용
-  // 원화라면, 직접 충전 가능
   @Column(name = "is_foreign", nullable = false)
-  private boolean isForeign; // 외화 여부 (→ 수수료 발생 여부)
+  private boolean isForeign; // 외화 여부 (true: 외화, false: 원화)
 
   @Column(name = "default_auto_charge_unit", nullable = false)
-  private BigDecimal defaultAutoChargeUnit; // 자동충전 단위 (ex. KRW: 10000, USD: 10 등)
+  private BigDecimal defaultAutoChargeUnit; // 자동 충전 단위 (CurrencyUnit에 따라 자동 설정됨)
 
   @Builder
-  public Currency(String code, String name, boolean isForeign, BigDecimal defaultAutoChargeUnit) {
+  public Currency(String code, String name, boolean isForeign) {
     this.code = code;
     this.name = name;
     this.isForeign = isForeign;
-    this.defaultAutoChargeUnit = defaultAutoChargeUnit;
+
+    // 통화 코드에 따라 자동으로 충전 단위 설정
+    this.defaultAutoChargeUnit = CurrencyUnit.fromCode(code).getUnitAmount();
   }
 
-  public BigDecimal getUnit() {
-    return CurrencyUnit.fromCode(code).getUnitAmount();
+  public BigDecimal getUnitAmount() {
+    return this.defaultAutoChargeUnit;
   }
 
-  public String getCode() {
-    return code;
+  // 통화 코드 기반 동등성 비교
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (!(o instanceof Currency)) return false;
+    Currency currency = (Currency) o;
+    return code.equals(currency.code);
+  }
+
+  @Override
+  public int hashCode() {
+    return code.hashCode();
   }
 }
-

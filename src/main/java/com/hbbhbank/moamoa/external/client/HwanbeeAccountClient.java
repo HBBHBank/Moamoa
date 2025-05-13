@@ -8,8 +8,8 @@ import com.hbbhbank.moamoa.external.exception.HwanbeeErrorCode;
 import com.hbbhbank.moamoa.global.common.BaseResponse;
 import com.hbbhbank.moamoa.global.exception.BaseException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -17,41 +17,30 @@ import org.springframework.stereotype.Component;
 public class HwanbeeAccountClient {
 
   private final HwanbeeApiClient apiClient;
+  private final HwanbeeApiEndpoints endpoints;
 
-  @Value("${hwanbee.verification-code-url}")
-  private String verificationCodeUrl;
-
-  @Value("${hwanbee.verification-check-url}")
-  private String verificationCheckUrl;
-
-  /**
-   * 인증 코드 발급
-   */
+  // 인증 코드 요청
   public VerificationCodeResponseDto requestVerificationCode(GenerateVerificationCodeRequestDto dto) {
-    BaseResponse<VerificationCodeResponseDto> base = apiClient.postForBaseResponse(
-      verificationCodeUrl,
+    return apiClient.post(
+      endpoints.getVerificationCodeUrl(),
       dto,
       new ParameterizedTypeReference<BaseResponse<VerificationCodeResponseDto>>() {},
       HwanbeeErrorCode.VERIFICATION_CODE_REQUEST_FAILED
     );
-    return base.getResult();
   }
 
-  /**
-   * 인증 코드 검증
-   */
+  // 인증 코드 검증
   public VerificationCheckResponseDto verifyDepositCode(VerificationCheckRequestDto dto) {
-    BaseResponse<VerificationCheckResponseDto> base = apiClient.postForBaseResponse(
-      verificationCheckUrl,
+    VerificationCheckResponseDto result = apiClient.post(
+      endpoints.getVerificationCheckUrl(),
       dto,
       new ParameterizedTypeReference<BaseResponse<VerificationCheckResponseDto>>() {},
       HwanbeeErrorCode.VERIFICATION_CODE_CHECK_FAILED
     );
 
-    VerificationCheckResponseDto resultDto = base.getResult();
-    if (!"SUCCESS".equals(resultDto.result())) {
+    if (!"SUCCESS".equals(result.result())) {
       throw BaseException.type(HwanbeeErrorCode.VERIFICATION_CODE_CHECK_FAILED);
     }
-    return resultDto;
+    return result;
   }
 }

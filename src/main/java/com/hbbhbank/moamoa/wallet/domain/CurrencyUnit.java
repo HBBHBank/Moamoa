@@ -1,5 +1,8 @@
 package com.hbbhbank.moamoa.wallet.domain;
 
+import com.hbbhbank.moamoa.global.exception.BaseException;
+import com.hbbhbank.moamoa.wallet.exception.WalletErrorCode;
+
 import java.math.BigDecimal;
 
 public enum CurrencyUnit {
@@ -29,6 +32,6 @@ public enum CurrencyUnit {
         return unit;
       }
     }
-    throw new IllegalArgumentException("Unsupported currency code: " + code);
+    throw BaseException.type(WalletErrorCode.UNSUPPORTED_CURRENCY_CODE);
   }
 }

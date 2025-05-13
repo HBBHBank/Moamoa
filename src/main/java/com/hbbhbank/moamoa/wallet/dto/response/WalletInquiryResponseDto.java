@@ -1,23 +1,24 @@
 package com.hbbhbank.moamoa.wallet.dto.response;
 
-import com.hbbhbank.moamoa.external.domain.UserAccountLink;
-import com.hbbhbank.moamoa.wallet.domain.Currency;
 import com.hbbhbank.moamoa.wallet.domain.Wallet;
 
 import java.math.BigDecimal;
 
 public record WalletInquiryResponseDto(
   String accountNumber,
-  Currency currency,
+  String currencyCode,
+  String currencyName,
   BigDecimal balance,
-  UserAccountLink accountLink
+  Long accountLinkId
 ) {
   public static WalletInquiryResponseDto from(Wallet w) {
     return new WalletInquiryResponseDto(
-      w.getAccountNumber(),
-      w.getCurrency(),
+      w.getWalletNumber(),
+      w.getCurrency().getCode(),
+      w.getCurrency().getName(),
       w.getBalance(),
-      w.getAccountLink()
+      w.getAccountLink().getId()
     );
   }
 }
+

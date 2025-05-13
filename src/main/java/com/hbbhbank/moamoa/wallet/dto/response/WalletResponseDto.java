@@ -17,7 +17,7 @@ public record WalletResponseDto(
     return new WalletResponseDto(
       wallet.getId(),
       wallet.getUser().getId(),
-      wallet.getAccountNumber(),
+      wallet.getWalletNumber(),
       wallet.getCurrency().getCode(),
       wallet.getCurrency().getName(),
       wallet.getBalance(),

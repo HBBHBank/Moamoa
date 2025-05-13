@@ -5,10 +5,7 @@ import com.hbbhbank.moamoa.global.exception.BaseException;
 import com.hbbhbank.moamoa.user.domain.User;
 import com.hbbhbank.moamoa.wallet.exception.WalletErrorCode;
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.DynamicUpdate;
 
 import java.math.BigDecimal;
@@ -17,10 +14,9 @@ import java.math.BigDecimal;
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @DynamicUpdate
-@Table(name = "wallets", uniqueConstraints = {
-  @UniqueConstraint(columnNames = {"user_id", "currency_code"})
-}) // 하나의 사용자는 같은 통화의 지갑을 2개 이상 가질 수 없도록 설정.
+@Table(name = "wallets", uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "currency_code"}))
 public class Wallet {
+
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   @Column(name = "wallet_id")
@@ -28,41 +24,61 @@ public class Wallet {
 
   @ManyToOne(fetch = FetchType.LAZY, optional = false)
   @JoinColumn(name = "user_id")
-  private User user;
+  private User user; // 지갑 소유자
 
-  @Column(name = "account_number", nullable = false, length = 30)
-  private String accountNumber; // 지갑 계좌번호. 환비 API와 별도의 계좌 번호임. (확장성 고려)
+  @Column(name = "wallet_number", nullable = false, length = 30, updatable = false)
+  private String walletNumber; // 지갑 번호 (내부용)
 
   @ManyToOne(fetch = FetchType.LAZY, optional = false)
   @JoinColumn(name = "currency_code")
-  private Currency currency;
+  private Currency currency; // 어떤 통화의 지갑인지
 
   @Column(name = "balance", nullable = false)
-  private BigDecimal balance; // 단위: 포인트
+  private BigDecimal balance = BigDecimal.ZERO; // 잔액 (포인트 단위)
 
   @OneToOne(fetch = FetchType.LAZY, optional = false)
   @JoinColumn(name = "user_account_link_id", unique = true)
-  private UserAccountLink accountLink;
+  private UserAccountLink accountLink; // 환비 API 연결 계좌
 
   @Builder
-  public Wallet(User user, String accountNumber, Currency currency, BigDecimal balance, UserAccountLink accountLink) {
+  public Wallet(User user, String walletNumber, Currency currency, BigDecimal balance, UserAccountLink accountLink) {
     this.user = user;
-    this.accountNumber = accountNumber;
+    this.walletNumber = walletNumber;
     this.currency = currency;
-    this.balance = balance;
+    this.balance = balance != null ? balance : BigDecimal.ZERO;
     this.accountLink = accountLink;
   }
 
-  public void updateBalance(BigDecimal amount) {
+  public static Wallet create(
+    User user,
+    String walletNumber,
+    Currency currency,
+    UserAccountLink accountLink
+  ) {
+    return Wallet.builder()
+      .user(user)
+      .walletNumber(walletNumber)
+      .currency(currency)
+      .balance(BigDecimal.ZERO) // 초기값 명시
+      .accountLink(accountLink)
+      .build();
+  }
+
+  // 포인트 충전
+  public void increaseBalance(BigDecimal amount) {
     this.balance = this.balance.add(amount);
   }
 
-  public void subtractBalance(BigDecimal amount) {
+  // 포인트 차감 (잔액 부족 시 예외)
+  public void decreaseBalance(BigDecimal amount) {
     if (this.balance.compareTo(amount) < 0) {
       throw BaseException.type(WalletErrorCode.INSUFFICIENT_BALANCE);
     }
     this.balance = this.balance.subtract(amount);
   }
 
+  // 동일 통화 지갑 여부 확인
+  public boolean isSameCurrency(Wallet other) {
+    return this.currency.equals(other.getCurrency());
+  }
 }
-
