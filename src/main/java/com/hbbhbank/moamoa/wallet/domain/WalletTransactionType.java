@@ -13,6 +13,8 @@ public enum WalletTransactionType {
   MANUAL_CHARGE("MANUAL_CHARGE", "수동 충전"),
   SETTLEMENT_SEND("SETTLEMENT_SEND", "정산 송금"),
   SETTLEMENT_RECEIVE("SETTLEMENT_RECEIVE", "정산 수금"),
+  EXCHANGE_OUT("EXCHANGE_OUT", "환전 출금"),
+  EXCHANGE_IN("EXCHANGE_IN", "환전 입금"),
   ;
 
   private final String code;

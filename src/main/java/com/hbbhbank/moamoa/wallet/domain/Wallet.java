@@ -1,7 +1,9 @@
 package com.hbbhbank.moamoa.wallet.domain;
 
 import com.hbbhbank.moamoa.external.domain.UserAccountLink;
+import com.hbbhbank.moamoa.global.exception.BaseException;
 import com.hbbhbank.moamoa.user.domain.User;
+import com.hbbhbank.moamoa.wallet.exception.WalletErrorCode;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -54,5 +56,13 @@ public class Wallet {
   public void updateBalance(BigDecimal amount) {
     this.balance = this.balance.add(amount);
   }
+
+  public void subtractBalance(BigDecimal amount) {
+    if (this.balance.compareTo(amount) < 0) {
+      throw BaseException.type(WalletErrorCode.INSUFFICIENT_BALANCE);
+    }
+    this.balance = this.balance.subtract(amount);
+  }
+
 }
 

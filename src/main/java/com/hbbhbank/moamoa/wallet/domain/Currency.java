@@ -41,5 +41,13 @@ public class Currency {
     this.isForeign = isForeign;
     this.defaultAutoChargeUnit = defaultAutoChargeUnit;
   }
+
+  public BigDecimal getUnit() {
+    return CurrencyUnit.fromCode(code).getUnitAmount();
+  }
+
+  public String getCode() {
+    return code;
+  }
 }
 

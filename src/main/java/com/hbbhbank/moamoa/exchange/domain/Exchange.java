@@ -41,7 +41,7 @@ public class Exchange {
   private BigDecimal exchangeRate; // 적용된 환율 (예: 11.30)
 
   @Column(nullable = false)
-  private LocalDateTime exchangedAt;
+  private LocalDateTime exchangedAt; // 환전한 시각
 
   @Builder
   public Exchange(User user,
