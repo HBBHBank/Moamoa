@@ -30,11 +30,15 @@ public class UserAccountLink { // 유저와 환비 API 실 계좌 연결 정보
   @Column(name = "external_bank_account_number", nullable = false)
   private String externalBankAccountNumber; // 환비 API
 
+  @Column(name = "currency_code", nullable = false, length = 10)
+  private String currencyCode;
+
   @Builder
-  public UserAccountLink(Long userId, String externalBankAccountId, String externalBankAccountNumber) {
+  public UserAccountLink(Long userId, String externalBankAccountId, String externalBankAccountNumber, String currencyCode) {
     this.userId = userId;
     this.externalBankAccountId = externalBankAccountId;
     this.externalBankAccountNumber = externalBankAccountNumber;
+    this.currencyCode = currencyCode;
   }
 }
 
