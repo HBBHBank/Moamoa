@@ -22,7 +22,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.time.ZonedDateTime;
 
 import static com.hbbhbank.moamoa.global.constant.Constants.MOAMOA_ACCOUNT;
 
@@ -65,7 +64,7 @@ public class RechargeService {
         MOAMOA_ACCOUNT, // 모아모아 계좌 번호
         req.amount(),
         req.currencyCode(),
-        ZonedDateTime.now()
+        LocalDateTime.now()
       )
     );
 
@@ -111,7 +110,7 @@ public class RechargeService {
         MOAMOA_ACCOUNT, // 모아모아 계좌 번호
         chargeAmount,
         req.currencyCode(),
-        ZonedDateTime.now()
+        LocalDateTime.now()
       )
     );
 
