@@ -2,9 +2,9 @@ package com.hbbhbank.moamoa.wallet.service;
 
 import com.hbbhbank.moamoa.wallet.domain.WalletTransaction;
 import com.hbbhbank.moamoa.wallet.domain.WalletTransactionType;
-import com.hbbhbank.moamoa.wallet.dto.request.CreateTransactionRequestDto;
 import com.hbbhbank.moamoa.wallet.dto.response.CreateWalletTransactionResponseDto;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 public interface WalletTransactionService {
@@ -19,5 +19,11 @@ public interface WalletTransactionService {
   List<WalletTransaction> getTransactionsByWalletAndType(String currencyCode, WalletTransactionType type);
 
   // 거래 내역 생성
-  CreateWalletTransactionResponseDto recordTransaction(CreateTransactionRequestDto req);
+  CreateWalletTransactionResponseDto recordTransaction(
+    Long walletId,
+    Long counterWalletId,
+    WalletTransactionType type,
+    BigDecimal amount,
+    boolean includedInSettlement
+  );
 }

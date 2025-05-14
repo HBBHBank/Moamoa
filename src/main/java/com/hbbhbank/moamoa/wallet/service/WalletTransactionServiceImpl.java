@@ -5,7 +5,6 @@ import com.hbbhbank.moamoa.user.service.UserService;
 import com.hbbhbank.moamoa.wallet.domain.Wallet;
 import com.hbbhbank.moamoa.wallet.domain.WalletTransaction;
 import com.hbbhbank.moamoa.wallet.domain.WalletTransactionType;
-import com.hbbhbank.moamoa.wallet.dto.request.CreateTransactionRequestDto;
 import com.hbbhbank.moamoa.wallet.dto.response.CreateWalletTransactionResponseDto;
 import com.hbbhbank.moamoa.wallet.exception.WalletErrorCode;
 import com.hbbhbank.moamoa.wallet.repository.WalletRepository;
@@ -14,6 +13,7 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Service
@@ -44,25 +44,31 @@ public class WalletTransactionServiceImpl implements WalletTransactionService {
 
   @Override
   @Transactional
-  public CreateWalletTransactionResponseDto recordTransaction(CreateTransactionRequestDto req) {
-    // 1. 지갑 조회
-    Wallet wallet = walletRepository.findByIdOrThrow(req.walletId());
+  public CreateWalletTransactionResponseDto recordTransaction(
+    Long walletId,
+    Long counterWalletId,
+    WalletTransactionType type,
+    BigDecimal amount,
+    boolean includedInSettlement
+  ) {
+    // 1. 내 지갑 조회
+    Wallet wallet = walletRepository.findByIdOrThrow(walletId);
 
-    // 2. 상대 지갑
-    Wallet counter = req.counterWalletId() != null
-      ? walletRepository.findByIdOrThrow(req.counterWalletId())
+    // 2. 상대 지갑 조회
+    Wallet counter = counterWalletId != null
+      ? walletRepository.findByIdOrThrow(counterWalletId)
       : null;
 
     // 3. 입/출금 처리
-    applyBalanceChange(wallet, req);
+    applyBalanceChange(wallet, type, amount);
 
     // 4. 도메인 객체 생성
     WalletTransaction tx = WalletTransaction.create(
       wallet,
       counter,
-      req.type(),
-      req.amount(),
-      req.includedInSettlement()
+      type,
+      amount,
+      includedInSettlement
     );
 
     // 5. 저장 및 반환
@@ -71,11 +77,11 @@ public class WalletTransactionServiceImpl implements WalletTransactionService {
   }
 
   // 거래 타입(ex. 환전, 송금 등)에 따라 입금인지 출금인지 판단하고 잔액을 변경
-  private void applyBalanceChange(Wallet wallet, CreateTransactionRequestDto req) {
-    if (req.type().isIncomeType()) {
-      wallet.increaseBalance(req.amount());
-    } else if (req.type().isExpenseType()) {
-      wallet.decreaseBalance(req.amount());
+  private void applyBalanceChange(Wallet wallet, WalletTransactionType type, BigDecimal amount) {
+    if (type.isIncomeType()) {
+      wallet.increaseBalance(amount);
+    } else if (type.isExpenseType()) {
+      wallet.decreaseBalance(amount);
     } else {
       throw BaseException.type(WalletErrorCode.INVALID_TRANSACTION_TYPE);
     }
