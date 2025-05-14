@@ -7,7 +7,7 @@ import com.hbbhbank.moamoa.wallet.dto.request.CreateWalletRequestDto;
 import com.hbbhbank.moamoa.wallet.dto.request.WalletInquiryRequestDto;
 import com.hbbhbank.moamoa.wallet.dto.response.WalletInquiryResponseDto;
 import com.hbbhbank.moamoa.wallet.dto.response.WalletResponseDto;
-import com.hbbhbank.moamoa.wallet.service.WalletService;
+import com.hbbhbank.moamoa.wallet.service.WalletServiceImpl;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -22,7 +22,7 @@ import java.util.List;
 @Validated
 public class WalletController {
 
-  private final WalletService walletService;
+  private final WalletServiceImpl walletService;
 
   // 가상 지갑 생성 전 외부 실계좌 인증코드 발급 요청, 환비 계좌 API를 통해 1회성 입금 인증코드를 발급
   @PostMapping("/verification-code")
