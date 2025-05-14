@@ -1,4 +1,4 @@
-package com.hbbhbank.moamoa.external.dto.response;
+package com.hbbhbank.moamoa.external.dto.response.exchange;
 
 import java.math.BigDecimal;
 import java.time.ZonedDateTime;

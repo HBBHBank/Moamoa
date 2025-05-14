@@ -1,6 +1,5 @@
 package com.hbbhbank.moamoa.external.domain;
 
-import com.hbbhbank.moamoa.external.dto.response.VerificationCheckResponseDto;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;

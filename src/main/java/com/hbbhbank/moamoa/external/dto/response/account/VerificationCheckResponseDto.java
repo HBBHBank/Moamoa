@@ -1,4 +1,4 @@
-package com.hbbhbank.moamoa.external.dto.response;
+package com.hbbhbank.moamoa.external.dto.response.account;
 
 import java.time.LocalDateTime;
 

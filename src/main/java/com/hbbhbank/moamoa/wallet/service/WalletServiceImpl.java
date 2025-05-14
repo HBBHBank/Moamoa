@@ -1,8 +1,8 @@
 package com.hbbhbank.moamoa.wallet.service;
 
 import com.hbbhbank.moamoa.external.domain.UserAccountLink;
-import com.hbbhbank.moamoa.external.dto.request.CreateVerificationContext;
-import com.hbbhbank.moamoa.external.dto.response.GetVerificationCodeResponseDto;
+import com.hbbhbank.moamoa.external.dto.request.account.AccountVerificationContext;
+import com.hbbhbank.moamoa.external.dto.response.account.GetVerificationCodeResponseDto;
 import com.hbbhbank.moamoa.external.service.HwanbeeAccountService;
 import com.hbbhbank.moamoa.global.exception.BaseException;
 import com.hbbhbank.moamoa.user.domain.User;
@@ -71,7 +71,7 @@ public class WalletServiceImpl implements WalletService {
       throw BaseException.type(WalletErrorCode.DUPLICATE_WALLET);
     }
 
-    UserAccountLink accountLink = hwanbeeAccountService.verifyAndLinkAccountWithUser(userId, CreateVerificationContext.from(req));
+    UserAccountLink accountLink = hwanbeeAccountService.verifyAndLinkAccountWithUser(userId, AccountVerificationContext.from(req));
     String walletNumber = generateWalletNumber(userId, currency.getCode());
     Wallet wallet = Wallet.create(user, walletNumber, currency, accountLink);
 

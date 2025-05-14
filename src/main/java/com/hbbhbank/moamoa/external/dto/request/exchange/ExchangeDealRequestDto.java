@@ -1,4 +1,4 @@
-package com.hbbhbank.moamoa.external.dto.request;
+package com.hbbhbank.moamoa.external.dto.request.exchange;
 
 public record ExchangeDealRequestDto(
   String quoteId,            // 환율 견적 ID

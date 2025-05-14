@@ -1,6 +1,5 @@
-package com.hbbhbank.moamoa.external.client;
+package com.hbbhbank.moamoa.external.client.common;
 
-import com.hbbhbank.moamoa.external.service.HwanbeeTokenService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpRequest;

@@ -1,6 +1,6 @@
 package com.hbbhbank.moamoa.wallet.service;
 
-import com.hbbhbank.moamoa.external.dto.response.GetVerificationCodeResponseDto;
+import com.hbbhbank.moamoa.external.dto.response.account.GetVerificationCodeResponseDto;
 import com.hbbhbank.moamoa.wallet.domain.Wallet;
 import com.hbbhbank.moamoa.wallet.dto.request.CreateWalletRequestDto;
 import com.hbbhbank.moamoa.wallet.dto.request.GetVerificationCodeWithinMoamoaRequestDto;

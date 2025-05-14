@@ -1,8 +1,8 @@
 package com.hbbhbank.moamoa.external.service;
 
-import com.hbbhbank.moamoa.external.client.HwanbeeTransferClient;
-import com.hbbhbank.moamoa.external.dto.request.TransferRequestDto;
-import com.hbbhbank.moamoa.external.dto.response.TransferResponseDto;
+import com.hbbhbank.moamoa.external.client.HwanbeeTransferClientImpl;
+import com.hbbhbank.moamoa.external.dto.request.transfer.TransferRequestDto;
+import com.hbbhbank.moamoa.external.dto.response.transfer.TransferResponseDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -10,11 +10,8 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class HwanbeeTransferService {
 
-  private final HwanbeeTransferClient hwanbeeTransferClient;
+  private final HwanbeeTransferClientImpl hwanbeeTransferClient;
 
-  /**
-   * 환비 API에 송금 요청
-   */
   public TransferResponseDto transfer(TransferRequestDto dto) {
     return hwanbeeTransferClient.requestTransfer(dto);
   }

@@ -22,7 +22,7 @@ public enum HwanbeeErrorCode implements ErrorCode {
   TOKEN_REQUEST_FAILED(HttpStatus.BAD_GATEWAY, "HWANBEE_006", "환비 토큰 발급에 실패했습니다."),
 
   // 이체 관련
-  WITHDRAWAL_FAILED(HttpStatus.BAD_GATEWAY, "HWANBEE_007", "환비 송금 API 요청에 실패했습니다."),
+  TRANSFER_FAILED(HttpStatus.BAD_GATEWAY, "HWANBEE_007", "환비 송금 API 요청에 실패했습니다."),
 
   // 환전 관련
   EXCHANGE_QUOTE_FAILED(HttpStatus.BAD_GATEWAY, "HWANBEE_008", "환전 정보 조회에 실패했습니다."),

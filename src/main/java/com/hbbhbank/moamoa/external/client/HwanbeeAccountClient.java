@@ -1,45 +1,37 @@
 package com.hbbhbank.moamoa.external.client;
 
-import com.hbbhbank.moamoa.external.dto.request.GetVerificationCodeRequestDto;
-import com.hbbhbank.moamoa.external.dto.request.VerificationCheckRequestDto;
-import com.hbbhbank.moamoa.external.dto.response.VerificationCheckResponseDto;
-import com.hbbhbank.moamoa.external.dto.response.GetVerificationCodeResponseDto;
-import com.hbbhbank.moamoa.external.exception.HwanbeeErrorCode;
-import com.hbbhbank.moamoa.global.common.BaseResponse;
-import com.hbbhbank.moamoa.global.exception.BaseException;
-import lombok.RequiredArgsConstructor;
-import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.stereotype.Component;
+import com.hbbhbank.moamoa.external.dto.request.account.GetVerificationCodeRequestDto;
+import com.hbbhbank.moamoa.external.dto.request.account.VerificationCheckRequestDto;
+import com.hbbhbank.moamoa.external.dto.response.account.GetVerificationCodeResponseDto;
+import com.hbbhbank.moamoa.external.dto.response.account.VerificationCheckResponseDto;
 
-@Component
-@RequiredArgsConstructor
-public class HwanbeeAccountClient {
+public interface HwanbeeAccountClient {
 
-  private final HwanbeeApiClient apiClient;
-  private final HwanbeeApiEndpoints endpoints;
+  /**
+   * 환비 API에 계좌 인증 코드를 요청합니다.
+   * <p>
+   * 이 요청은 사용자가 입력한 외부 은행 계좌 번호에 대해 환비 API 측에서
+   * 1회성 입금 인증 코드(보통 소액 입금 또는 숫자 코드)를 발급하게 합니다.
+   * 프론트는 이 인증 코드를 사용자에게 입력받아 인증 절차를 마무리합니다.
+   * </p>
+   *
+   * @param dto 인증 코드 요청에 필요한 사용자 ID, 외부 은행 계좌 번호 등의 정보
+   * @return 인증 코드 응답 객체 (예: {"verificationCode": "123456"})
+   * @throws com.hbbhbank.moamoa.global.exception.BaseException 인증 요청 실패 시 예외 발생
+   */
+  GetVerificationCodeResponseDto requestVerificationCode(GetVerificationCodeRequestDto dto);
 
-  // 인증 코드 요청
-  public GetVerificationCodeResponseDto requestVerificationCode(GetVerificationCodeRequestDto dto) {
-    return apiClient.post(
-      endpoints.getVerificationCodeUrl(),
-      dto,
-      new ParameterizedTypeReference<BaseResponse<GetVerificationCodeResponseDto>>() {},
-      HwanbeeErrorCode.VERIFICATION_CODE_REQUEST_FAILED
-    );
-  }
+  /**
+   * 사용자가 입력한 인증 코드의 유효성을 환비 API를 통해 검증합니다.
+   * <p>
+   * 이 메서드는 사용자가 입력한 코드가 실제 환비 측에서 발급한 코드와 일치하는지 확인하고,
+   * 계좌의 인증 여부를 판단합니다. 검증이 성공하면 외부 계좌 ID 등의 정보를 반환합니다.
+   * </p>
+   *
+   * @param dto 인증 검증 요청 객체 (사용자 ID, 외부 계좌 번호, 인증 코드 포함)
+   * @return 인증 검증 결과 응답 객체 (성공 여부, 외부 계좌 ID 등)
+   * @throws com.hbbhbank.moamoa.global.exception.BaseException 인증 실패 또는 통신 실패 시 예외 발생
+   */
+  VerificationCheckResponseDto verifyDepositCode(VerificationCheckRequestDto dto);
 
-  // 인증 코드 검증
-  public VerificationCheckResponseDto verifyDepositCode(VerificationCheckRequestDto dto) {
-    VerificationCheckResponseDto result = apiClient.post(
-      endpoints.getVerificationCheckUrl(),
-      dto,
-      new ParameterizedTypeReference<BaseResponse<VerificationCheckResponseDto>>() {},
-      HwanbeeErrorCode.VERIFICATION_CODE_CHECK_FAILED
-    );
-
-    if (!"SUCCESS".equals(result.result())) {
-      throw BaseException.type(HwanbeeErrorCode.VERIFICATION_CODE_CHECK_FAILED);
-    }
-    return result;
-  }
 }

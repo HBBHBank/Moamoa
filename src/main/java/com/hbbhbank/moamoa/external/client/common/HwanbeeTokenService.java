@@ -1,4 +1,4 @@
-package com.hbbhbank.moamoa.external.service;
+package com.hbbhbank.moamoa.external.client.common;
 
 import com.hbbhbank.moamoa.external.exception.HwanbeeErrorCode;
 import com.hbbhbank.moamoa.global.exception.BaseException;

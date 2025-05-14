@@ -1,36 +1,16 @@
 package com.hbbhbank.moamoa.external.client;
 
-import com.hbbhbank.moamoa.external.dto.request.TransferRequestDto;
-import com.hbbhbank.moamoa.external.dto.response.TransferResponseDto;
-import com.hbbhbank.moamoa.external.exception.HwanbeeErrorCode;
-import com.hbbhbank.moamoa.global.common.BaseResponse;
-import com.hbbhbank.moamoa.global.exception.BaseException;
-import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.stereotype.Component;
+import com.hbbhbank.moamoa.external.dto.request.transfer.TransferRequestDto;
+import com.hbbhbank.moamoa.external.dto.response.transfer.TransferResponseDto;
 
-@Component
-@RequiredArgsConstructor
-public class HwanbeeTransferClient {
+public interface HwanbeeTransferClient {
 
-  private final HwanbeeApiClient apiClient;
-
-  @Value("https://api.hwanbee.com/v1/transfer")
-  private String transferUrl;
-
-  public TransferResponseDto requestTransfer(TransferRequestDto dto) {
-    BaseResponse<TransferResponseDto> response = apiClient.postForBaseResponse(
-      transferUrl,
-      dto,
-      new ParameterizedTypeReference<>() {},
-      HwanbeeErrorCode.WITHDRAWAL_FAILED
-    );
-
-    if (!"SUCCESS".equals(response.getResult().status())) {
-      throw BaseException.type(HwanbeeErrorCode.WITHDRAWAL_FAILED);
-    }
-
-    return response.getResult();
-  }
+  /**
+   * 환비 API에 송금 요청을 전송합니다.
+   *
+   * @param dto 송금 요청 정보 (보내는 계좌, 받는 계좌, 금액, 통화, 요청 시간 등)
+   * @return 송금 결과를 담은 응답 객체 (거래 상태, 거래 ID, 거래 완료 시각, 거래 후 잔액 등)
+   * @throws com.hbbhbank.moamoa.global.exception.BaseException 송금 실패 또는 외부 API 오류 발생 시
+   */
+  TransferResponseDto requestTransfer(TransferRequestDto dto);
 }

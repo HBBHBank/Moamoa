@@ -1,4 +1,4 @@
-package com.hbbhbank.moamoa.external.dto.request;
+package com.hbbhbank.moamoa.external.dto.request.account;
 
 import com.hbbhbank.moamoa.wallet.dto.request.GetVerificationCodeWithinMoamoaRequestDto;
 
