@@ -1,12 +1,12 @@
 package com.hbbhbank.moamoa.wallet.controller;
 
-import com.hbbhbank.moamoa.external.dto.request.GenerateVerificationCodeRequestDto;
-import com.hbbhbank.moamoa.external.dto.response.VerificationCodeResponseDto;
+import com.hbbhbank.moamoa.external.dto.response.GetVerificationCodeResponseDto;
 import com.hbbhbank.moamoa.global.common.BaseResponse;
 import com.hbbhbank.moamoa.wallet.dto.request.CreateWalletRequestDto;
+import com.hbbhbank.moamoa.wallet.dto.request.GetVerificationCodeWithinMoamoaRequestDto;
 import com.hbbhbank.moamoa.wallet.dto.request.WalletInquiryRequestDto;
 import com.hbbhbank.moamoa.wallet.dto.response.WalletInquiryResponseDto;
-import com.hbbhbank.moamoa.wallet.dto.response.WalletResponseDto;
+import com.hbbhbank.moamoa.wallet.dto.response.CreateWalletResponseDto;
 import com.hbbhbank.moamoa.wallet.service.WalletServiceImpl;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -26,21 +26,21 @@ public class WalletController {
 
   // 가상 지갑 생성 전 외부 실계좌 인증코드 발급 요청, 환비 계좌 API를 통해 1회성 입금 인증코드를 발급
   @PostMapping("/verification-code")
-  public ResponseEntity<BaseResponse<VerificationCodeResponseDto>> generateVerificationCode(
-    @RequestBody @Valid GenerateVerificationCodeRequestDto requestDto
+  public ResponseEntity<BaseResponse<GetVerificationCodeResponseDto>> generateVerificationCode(
+    @RequestBody @Valid GetVerificationCodeWithinMoamoaRequestDto requestDto
   ) {
     return ResponseEntity.ok(BaseResponse.success(
-      walletService.requestVerificationCode(requestDto))
+      walletService.getVerificationCode(requestDto))
     );
   }
 
   // 외부 계좌 인증 확인 후 사용자 가상 지갑 생성. 사용자가 인증코드로 입금한 후, 이를 검증하여 가상 지갑을 생성
   @PostMapping
-  public ResponseEntity<BaseResponse<WalletResponseDto>> createWallet(
+  public ResponseEntity<BaseResponse<CreateWalletResponseDto>> createWallet(
     @RequestBody @Valid CreateWalletRequestDto requestDto
   ) {
     return ResponseEntity.ok(BaseResponse.success(
-      walletService.createWallet(requestDto))
+      walletService.createWalletAfterVerification(requestDto))
     );
   }
 
@@ -51,7 +51,7 @@ public class WalletController {
   ) {
     WalletInquiryRequestDto dto = new WalletInquiryRequestDto(currencyCode);
     return ResponseEntity.ok(BaseResponse.success(
-      walletService.showWallet(dto))
+      walletService.getWalletByUserAndCurrency(dto))
     );
   }
 

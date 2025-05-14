@@ -3,12 +3,12 @@ package com.hbbhbank.moamoa.external.service;
 import com.hbbhbank.moamoa.external.client.HwanbeeAccountClient;
 import com.hbbhbank.moamoa.external.domain.UserAccountLink;
 import com.hbbhbank.moamoa.external.dto.request.CreateVerificationContext;
-import com.hbbhbank.moamoa.external.dto.request.GenerateVerificationCodeRequestDto;
+import com.hbbhbank.moamoa.external.dto.request.GetVerificationCodeRequestDto;
 import com.hbbhbank.moamoa.external.dto.request.VerificationCheckRequestDto;
 import com.hbbhbank.moamoa.external.dto.response.VerificationCheckResponseDto;
-import com.hbbhbank.moamoa.external.dto.response.VerificationCodeResponseDto;
+import com.hbbhbank.moamoa.external.dto.response.GetVerificationCodeResponseDto;
 import com.hbbhbank.moamoa.external.repository.HwanbeeLinkRepository;
-import com.hbbhbank.moamoa.global.security.util.SecurityUtil;
+import com.hbbhbank.moamoa.wallet.dto.request.GetVerificationCodeWithinMoamoaRequestDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,8 +21,8 @@ public class HwanbeeAccountService {
   private final HwanbeeLinkRepository hwanbeeLinkRepository;
 
   // 인증 코드 요청
-  public VerificationCodeResponseDto requestVerificationCodeWithUser(GenerateVerificationCodeRequestDto req, Long userId) {
-    GenerateVerificationCodeRequestDto enriched = GenerateVerificationCodeRequestDto.of(userId, req);
+  public GetVerificationCodeResponseDto getVerificationCodeFromHwanbee(Long userId, GetVerificationCodeWithinMoamoaRequestDto req) {
+    GetVerificationCodeRequestDto enriched = GetVerificationCodeRequestDto.of(userId, req);
     return hwanbeeAccountClient.requestVerificationCode(enriched);
   }
 

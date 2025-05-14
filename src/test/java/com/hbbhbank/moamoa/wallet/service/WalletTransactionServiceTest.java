@@ -6,7 +6,7 @@ import com.hbbhbank.moamoa.wallet.domain.WalletTransaction;
 import com.hbbhbank.moamoa.wallet.domain.WalletTransactionType;
 import com.hbbhbank.moamoa.wallet.dto.request.CreateWalletTransactionRequestDto;
 import com.hbbhbank.moamoa.wallet.dto.request.WalletInquiryRequestDto;
-import com.hbbhbank.moamoa.wallet.dto.response.WalletTransactionResponseDto;
+import com.hbbhbank.moamoa.wallet.dto.response.CreateWalletTransactionResponseDto;
 import com.hbbhbank.moamoa.wallet.exception.WalletErrorCode;
 import com.hbbhbank.moamoa.wallet.repository.WalletRepository;
 import com.hbbhbank.moamoa.wallet.repository.WalletTransactionRepository;
@@ -31,7 +31,7 @@ import static org.mockito.Mockito.any;
 class WalletTransactionServiceTest {
 
   @InjectMocks
-  private WalletTransactionService walletTransactionService;
+  private WalletTransactionServiceImpl walletTransactionService;
 
   @Mock
   private WalletTransactionRepository walletTransactionRepository;
@@ -60,7 +60,7 @@ class WalletTransactionServiceTest {
       .willAnswer(invocation -> invocation.getArgument(0));
 
     // when
-    WalletTransactionResponseDto response = walletTransactionService.recordTransaction(req);
+    CreateWalletTransactionResponseDto response = walletTransactionService.recordTransaction(req);
 
     // then
     assertThat(response).isNotNull();

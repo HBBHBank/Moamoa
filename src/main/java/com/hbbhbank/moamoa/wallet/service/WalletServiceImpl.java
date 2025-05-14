@@ -2,8 +2,7 @@ package com.hbbhbank.moamoa.wallet.service;
 
 import com.hbbhbank.moamoa.external.domain.UserAccountLink;
 import com.hbbhbank.moamoa.external.dto.request.CreateVerificationContext;
-import com.hbbhbank.moamoa.external.dto.request.GenerateVerificationCodeRequestDto;
-import com.hbbhbank.moamoa.external.dto.response.VerificationCodeResponseDto;
+import com.hbbhbank.moamoa.external.dto.response.GetVerificationCodeResponseDto;
 import com.hbbhbank.moamoa.external.service.HwanbeeAccountService;
 import com.hbbhbank.moamoa.global.exception.BaseException;
 import com.hbbhbank.moamoa.user.domain.User;
@@ -11,9 +10,10 @@ import com.hbbhbank.moamoa.user.service.UserService;
 import com.hbbhbank.moamoa.wallet.domain.Currency;
 import com.hbbhbank.moamoa.wallet.domain.Wallet;
 import com.hbbhbank.moamoa.wallet.dto.request.CreateWalletRequestDto;
+import com.hbbhbank.moamoa.wallet.dto.request.GetVerificationCodeWithinMoamoaRequestDto;
 import com.hbbhbank.moamoa.wallet.dto.request.WalletInquiryRequestDto;
 import com.hbbhbank.moamoa.wallet.dto.response.WalletInquiryResponseDto;
-import com.hbbhbank.moamoa.wallet.dto.response.WalletResponseDto;
+import com.hbbhbank.moamoa.wallet.dto.response.CreateWalletResponseDto;
 import com.hbbhbank.moamoa.wallet.exception.WalletErrorCode;
 import com.hbbhbank.moamoa.wallet.repository.WalletRepository;
 import jakarta.transaction.Transactional;
@@ -33,7 +33,7 @@ public class WalletServiceImpl implements WalletService {
   private final HwanbeeAccountService hwanbeeAccountService;
 
   @Override
-  public WalletInquiryResponseDto showWallet(WalletInquiryRequestDto req) {
+  public WalletInquiryResponseDto getWalletByUserAndCurrency(WalletInquiryRequestDto req) {
     Long userId = userService.getCurrentUserId();
 
     Wallet wallet = walletRepository.findByUserIdAndCurrencyCode(userId, req.currencyCode())
@@ -53,15 +53,15 @@ public class WalletServiceImpl implements WalletService {
   }
 
   @Override
-  public VerificationCodeResponseDto requestVerificationCode(GenerateVerificationCodeRequestDto req) {
-    Long userId = userService.getCurrentUserId();
+  public GetVerificationCodeResponseDto getVerificationCode(GetVerificationCodeWithinMoamoaRequestDto req) {
+    Long userId = userService.getCurrentUserId(); // 사용자 id 받기
 
-    return hwanbeeAccountService.requestVerificationCodeWithUser(req, userId);
+    return hwanbeeAccountService.getVerificationCodeFromHwanbee(userId, req);
   }
 
   @Override
   @Transactional
-  public WalletResponseDto createWallet(CreateWalletRequestDto req) {
+  public CreateWalletResponseDto createWalletAfterVerification(CreateWalletRequestDto req) {
     Long userId = userService.getCurrentUserId();
     User user = userService.getByIdOrThrow(userId);
     Currency currency = currencyService.getByCodeOrThrow(req.currencyCode());
@@ -74,7 +74,7 @@ public class WalletServiceImpl implements WalletService {
     String walletNumber = generateWalletNumber(userId, currency.getCode());
     Wallet wallet = Wallet.create(user, walletNumber, currency, accountLink);
 
-    return WalletResponseDto.from(walletRepository.save(wallet));
+    return CreateWalletResponseDto.from(walletRepository.save(wallet));
   }
 
   private String generateWalletNumber(Long userId, String currencyCode) {
