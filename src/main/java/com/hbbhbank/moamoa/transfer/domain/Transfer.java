@@ -47,4 +47,14 @@ public class Transfer {
     this.status = status;
     this.transferAt = transferAt;
   }
+
+  public static Transfer create(Wallet fromWallet, Wallet toWallet, BigDecimal amount, TransferStatus status) {
+    return Transfer.builder()
+      .fromWallet(fromWallet)
+      .toWallet(toWallet)
+      .amount(amount)
+      .status(status)
+      .transferAt(LocalDateTime.now())
+      .build();
+  }
 }

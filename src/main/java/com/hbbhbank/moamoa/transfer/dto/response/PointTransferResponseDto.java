@@ -7,16 +7,20 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 public record PointTransferResponseDto(
-  Long fromWalletId,
-  Long toWalletId,
+  String fromWalletNumber,
+  String fromUserName,
+  String toWalletNumber,
+  String toUserName,
   BigDecimal amount,
   TransferStatus status,
   LocalDateTime transferAt
 ) {
   public static PointTransferResponseDto from(Transfer transfer) {
     return new PointTransferResponseDto(
-      transfer.getFromWallet().getId(),
-      transfer.getToWallet().getId(),
+      transfer.getFromWallet().getWalletNumber(),
+      transfer.getFromWallet().getUser().getName(),
+      transfer.getToWallet().getWalletNumber(),
+      transfer.getToWallet().getUser().getName(),
       transfer.getAmount(),
       transfer.getStatus(),
       transfer.getTransferAt()
