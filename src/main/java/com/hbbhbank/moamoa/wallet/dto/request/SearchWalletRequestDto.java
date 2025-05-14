@@ -1,13 +1,9 @@
 package com.hbbhbank.moamoa.wallet.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 
-public record GetVerificationCodeWithinMoamoaRequestDto(
-
-  @NotNull(message = "계좌번호 입력은 필수 입니다.")
-  String externalBankAccountNumber,
+public record SearchWalletRequestDto(
 
   @NotBlank(message = "통화 코드는 필수입니다.")
   @Pattern(
@@ -15,5 +11,4 @@ public record GetVerificationCodeWithinMoamoaRequestDto(
     message = "지원하지 않는 통화입니다."
   )
   String currencyCode
-) {
-}
+) {}

@@ -6,22 +6,22 @@ import java.math.BigDecimal;
 
 public record CreateWalletResponseDto(
   Long id,
-  Long userId,
-  String accountNumber,
+  String userName,
+  String walletNumber,
   String currencyCode,
   String currencyName,
   BigDecimal balance,
-  Long accountLinkId
+  String ExternalBankAccountNumber
 ) {
   public static CreateWalletResponseDto from(Wallet wallet) {
     return new CreateWalletResponseDto(
       wallet.getId(),
-      wallet.getUser().getId(),
+      wallet.getUser().getName(),
       wallet.getWalletNumber(),
       wallet.getCurrency().getCode(),
       wallet.getCurrency().getName(),
       wallet.getBalance(),
-      wallet.getAccountLink().getId()
+      wallet.getAccountLink().getExternalBankAccountNumber()
     );
   }
 }

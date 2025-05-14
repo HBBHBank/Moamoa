@@ -11,8 +11,9 @@ import com.hbbhbank.moamoa.wallet.domain.Currency;
 import com.hbbhbank.moamoa.wallet.domain.Wallet;
 import com.hbbhbank.moamoa.wallet.dto.request.CreateWalletRequestDto;
 import com.hbbhbank.moamoa.wallet.dto.request.GetVerificationCodeWithinMoamoaRequestDto;
-import com.hbbhbank.moamoa.wallet.dto.request.WalletInquiryRequestDto;
-import com.hbbhbank.moamoa.wallet.dto.response.WalletInquiryResponseDto;
+import com.hbbhbank.moamoa.wallet.dto.request.SearchWalletRequestDto;
+import com.hbbhbank.moamoa.wallet.dto.response.GetWalletInfoResponseDto;
+import com.hbbhbank.moamoa.wallet.dto.response.SearchWalletResponseDto;
 import com.hbbhbank.moamoa.wallet.dto.response.CreateWalletResponseDto;
 import com.hbbhbank.moamoa.wallet.exception.WalletErrorCode;
 import com.hbbhbank.moamoa.wallet.repository.WalletRepository;
@@ -33,22 +34,22 @@ public class WalletServiceImpl implements WalletService {
   private final HwanbeeAccountService hwanbeeAccountService;
 
   @Override
-  public WalletInquiryResponseDto getWalletByUserAndCurrency(WalletInquiryRequestDto req) {
+  public SearchWalletResponseDto getWalletByUserAndCurrency(SearchWalletRequestDto req) {
     Long userId = userService.getCurrentUserId();
 
     Wallet wallet = walletRepository.findByUserIdAndCurrencyCode(userId, req.currencyCode())
       .orElseThrow(() -> BaseException.type(WalletErrorCode.NOT_FOUND_WALLET));
 
-    return WalletInquiryResponseDto.from(wallet);
+    return SearchWalletResponseDto.from(wallet);
   }
 
   @Override
   @Transactional
-  public List<WalletInquiryResponseDto> getAllWalletsByUser() {
+  public List<SearchWalletResponseDto> getAllWalletsByUser() {
     Long userId = userService.getCurrentUserId();
 
     return walletRepository.findAllByUserWithCurrency(userId).stream()
-      .map(WalletInquiryResponseDto::from)
+      .map(SearchWalletResponseDto::from)
       .collect(Collectors.toList());
   }
 
@@ -76,6 +77,21 @@ public class WalletServiceImpl implements WalletService {
 
     return CreateWalletResponseDto.from(walletRepository.save(wallet));
   }
+
+  @Override
+  public GetWalletInfoResponseDto getReceiverWalletInfo(String walletNumber) {
+    Wallet wallet = walletRepository.findByWalletNumber(walletNumber)
+      .orElseThrow(() -> BaseException.type(WalletErrorCode.NOT_FOUND_WALLET));
+
+    return GetWalletInfoResponseDto.from(wallet);
+  }
+
+  @Override
+  public Wallet getWalletByNumberOrThrow(String walletNumber) {
+    return walletRepository.findByWalletNumber(walletNumber)
+      .orElseThrow(() -> BaseException.type(WalletErrorCode.NOT_FOUND_WALLET));
+  }
+
 
   private String generateWalletNumber(Long userId, String currencyCode) {
     int random = (int)(Math.random() * 90_000_000) + 10_000_000;

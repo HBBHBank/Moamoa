@@ -1,13 +1,12 @@
 package com.hbbhbank.moamoa.wallet.dto.request;
 
-import com.hbbhbank.moamoa.wallet.domain.Wallet;
 import com.hbbhbank.moamoa.wallet.domain.WalletTransactionType;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
 
 import java.math.BigDecimal;
 
-public record CreateWalletTransactionRequestDto(
+public record CreateTransactionRequestDto(
 
   @NotNull(message = "지갑 ID는 필수입니다.")
   Long walletId,

@@ -68,4 +68,14 @@ public class WalletRepositoryImpl implements WalletRepositoryCustom {
       .where(wallet.user.id.eq(userId))
       .fetch();
   }
+
+  @Override
+  public Optional<Wallet> findByWalletNumber(String walletNumber) {
+    return Optional.ofNullable(
+      queryFactory.selectFrom(wallet)
+        .join(wallet.currency, currency).fetchJoin()
+        .where(wallet.walletNumber.eq(walletNumber))
+        .fetchOne()
+    );
+  }
 }

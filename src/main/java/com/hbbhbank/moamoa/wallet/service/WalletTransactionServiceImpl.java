@@ -1,10 +1,11 @@
 package com.hbbhbank.moamoa.wallet.service;
 
 import com.hbbhbank.moamoa.global.exception.BaseException;
+import com.hbbhbank.moamoa.user.service.UserService;
 import com.hbbhbank.moamoa.wallet.domain.Wallet;
 import com.hbbhbank.moamoa.wallet.domain.WalletTransaction;
-import com.hbbhbank.moamoa.wallet.dto.request.CreateWalletTransactionRequestDto;
-import com.hbbhbank.moamoa.wallet.dto.request.WalletInquiryRequestDto;
+import com.hbbhbank.moamoa.wallet.domain.WalletTransactionType;
+import com.hbbhbank.moamoa.wallet.dto.request.CreateTransactionRequestDto;
 import com.hbbhbank.moamoa.wallet.dto.response.CreateWalletTransactionResponseDto;
 import com.hbbhbank.moamoa.wallet.exception.WalletErrorCode;
 import com.hbbhbank.moamoa.wallet.repository.WalletRepository;
@@ -13,22 +14,37 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class WalletTransactionServiceImpl implements WalletTransactionService {
 
   private final WalletTransactionRepository walletTransactionRepository;
   private final WalletRepository walletRepository;
+  private final UserService userService;
 
   @Override
-  public WalletTransaction showWalletTransaction(WalletInquiryRequestDto req) {
-    return walletTransactionRepository.findByWallet_Currency_Code(req.currencyCode())
+  public WalletTransaction showWalletTransaction(String currencyCode) {
+    return walletTransactionRepository.findByCurrencyCode(currencyCode)
       .orElseThrow(() -> BaseException.type(WalletErrorCode.NOT_FOUND_WALLET));
   }
 
   @Override
+  public List<WalletTransaction> getAllTransactionsByWallet(String currencyCode) {
+    Long userId = userService.getCurrentUserId();
+    return walletTransactionRepository.findListByUserAndCurrency(userId, currencyCode);
+  }
+
+  @Override
+  public List<WalletTransaction> getTransactionsByWalletAndType(String currencyCode, WalletTransactionType type) {
+    Long userId = userService.getCurrentUserId();
+    return walletTransactionRepository.findListByUserAndCurrencyAndType(userId, currencyCode, type);
+  }
+
+  @Override
   @Transactional
-  public CreateWalletTransactionResponseDto recordTransaction(CreateWalletTransactionRequestDto req) {
+  public CreateWalletTransactionResponseDto recordTransaction(CreateTransactionRequestDto req) {
     // 1. 지갑 조회
     Wallet wallet = walletRepository.findByIdOrThrow(req.walletId());
 
@@ -37,14 +53,10 @@ public class WalletTransactionServiceImpl implements WalletTransactionService {
       ? walletRepository.findByIdOrThrow(req.counterWalletId())
       : null;
 
-    // 3. 거래 유형에 따라 입금/출금 처리
-    switch (req.type()) {
-      case AUTO_CHARGE, MANUAL_CHARGE, SETTLEMENT_RECEIVE, EXCHANGE_IN -> wallet.increaseBalance(req.amount());
-      case QR_PAYMENT, WITHDRAWAL, TRANSFER, SETTLEMENT_SEND, EXCHANGE_OUT -> wallet.decreaseBalance(req.amount());
-      default -> throw BaseException.type(WalletErrorCode.INVALID_TRANSACTION_TYPE); // 안전망
-    }
+    // 3. 입/출금 처리
+    applyBalanceChange(wallet, req);
 
-    // 4. 트랜잭션 정적 팩토리 메서드로 생성
+    // 4. 도메인 객체 생성
     WalletTransaction tx = WalletTransaction.create(
       wallet,
       counter,
@@ -56,6 +68,17 @@ public class WalletTransactionServiceImpl implements WalletTransactionService {
     // 5. 저장 및 반환
     walletTransactionRepository.save(tx);
     return CreateWalletTransactionResponseDto.from(tx);
+  }
+
+  // 거래 타입(ex. 환전, 송금 등)에 따라 입금인지 출금인지 판단하고 잔액을 변경
+  private void applyBalanceChange(Wallet wallet, CreateTransactionRequestDto req) {
+    if (req.type().isIncomeType()) {
+      wallet.increaseBalance(req.amount());
+    } else if (req.type().isExpenseType()) {
+      wallet.decreaseBalance(req.amount());
+    } else {
+      throw BaseException.type(WalletErrorCode.INVALID_TRANSACTION_TYPE);
+    }
   }
 
 }

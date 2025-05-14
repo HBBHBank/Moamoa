@@ -4,20 +4,20 @@ import com.hbbhbank.moamoa.wallet.domain.Wallet;
 
 import java.math.BigDecimal;
 
-public record WalletInquiryResponseDto(
-  String accountNumber,
+public record SearchWalletResponseDto(
+  String walletNumber,
   String currencyCode,
   String currencyName,
   BigDecimal balance,
-  Long accountLinkId
+  String ExternalBankAccountNumber
 ) {
-  public static WalletInquiryResponseDto from(Wallet w) {
-    return new WalletInquiryResponseDto(
+  public static SearchWalletResponseDto from(Wallet w) {
+    return new SearchWalletResponseDto(
       w.getWalletNumber(),
       w.getCurrency().getCode(),
       w.getCurrency().getName(),
       w.getBalance(),
-      w.getAccountLink().getId()
+      w.getAccountLink().getExternalBankAccountNumber()
     );
   }
 }
