@@ -1,15 +1,13 @@
 package com.hbbhbank.moamoa.withdraw.service;
 
 import com.hbbhbank.moamoa.external.domain.UserAccountLink;
-import com.hbbhbank.moamoa.external.dto.request.TransferRequestDto;
-import com.hbbhbank.moamoa.external.dto.response.TransferResponseDto;
+import com.hbbhbank.moamoa.external.dto.request.transfer.TransferRequestDto;
+import com.hbbhbank.moamoa.external.dto.response.transfer.TransferResponseDto;
 import com.hbbhbank.moamoa.external.repository.HwanbeeLinkRepository;
 import com.hbbhbank.moamoa.external.service.HwanbeeTransferService;
 import com.hbbhbank.moamoa.global.exception.BaseException;
-import com.hbbhbank.moamoa.global.security.util.SecurityUtil;
+import com.hbbhbank.moamoa.user.service.UserService;
 import com.hbbhbank.moamoa.wallet.domain.Wallet;
-import com.hbbhbank.moamoa.wallet.domain.WalletTransaction;
-import com.hbbhbank.moamoa.wallet.domain.WalletTransactionType;
 import com.hbbhbank.moamoa.wallet.repository.WalletRepository;
 import com.hbbhbank.moamoa.wallet.repository.WalletTransactionRepository;
 import com.hbbhbank.moamoa.withdraw.domain.Withdrawal;
@@ -22,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Service
@@ -33,59 +32,47 @@ public class WithdrawService {
   private final WithdrawRepository withdrawRepository;
   private final HwanbeeTransferService hwanbeeTransferService;
   private final HwanbeeLinkRepository hwanbeeLinkRepository;
+  private final UserService userService;
 
   @Transactional
   public WithdrawResponseDto withdrawToRealAccount(WithdrawRequestDto req) {
-    Long userId = SecurityUtil.getCurrentUserId();
+    Long userId = userService.getCurrentUserId();
 
+    // 1. 사용자 지갑 조회
     Wallet wallet = walletRepository.findByUserIdAndCurrencyCode(userId, req.currencyCode())
       .orElseThrow(() -> BaseException.type(WithdrawErrorCode.WALLET_NOT_FOUND));
 
+    // 2. 잔액 확인
     if (wallet.getBalance().compareTo(req.amount()) < 0) {
       throw BaseException.type(WithdrawErrorCode.INSUFFICIENT_BALANCE);
     }
 
+    // 3. 연결된 계좌 확인
     UserAccountLink accountLink = hwanbeeLinkRepository.findByUserIdAndCurrencyCode(userId, req.currencyCode())
       .orElseThrow(() -> BaseException.type(WithdrawErrorCode.ACCOUNT_LINK_NOT_FOUND));
 
-    LocalDateTime now = LocalDateTime.now();
+    // 4. 외부 송금 실행 (DTO 생성 책임 분리)
+    TransferResponseDto responseDto = hwanbeeTransferService.transferFromWalletToLinkedAccount(wallet, accountLink, req.amount());
 
-    TransferRequestDto requestDto = new TransferRequestDto(
-      userId,
-      wallet.getAccountNumber(),
-      accountLink.getExternalBankAccountNumber(),
-      req.amount(),
-      req.currencyCode(),
-      now
-    );
+    // 5. 잔액 차감
+    wallet.decreaseBalance(req.amount());
 
-    TransferResponseDto responseDto;
-    try {
-      responseDto = hwanbeeTransferService.transfer(requestDto);
-    } catch (Exception e) {
-      throw BaseException.type(WithdrawErrorCode.TRANSFER_FAILED);
-    }
-
-    wallet.subtractBalance(req.amount());
-
-    walletTransactionRepository.save(WalletTransaction.builder()
-      .wallet(wallet)
-      .type(WalletTransactionType.WITHDRAWAL)
-      .amount(req.amount())
-      .includedInSettlement(false)
-      .transactedAt(responseDto.transferredAt())
-      .build());
-
-    Withdrawal withdrawal = withdrawRepository.save(
-      Withdrawal.builder()
-        .userAccountLink(accountLink)
-        .wallet(wallet)
-        .amount(req.amount())
-        .status(WithdrawalStatus.SUCCESS)
-        .withdrawnAt(responseDto.transferredAt())
-        .build()
-    );
+    // 6. 출금 기록 저장
+    Withdrawal withdrawal = recordWithdrawal(wallet, accountLink, req.amount(), responseDto.transferredAt());
 
     return WithdrawResponseDto.from(withdrawal);
+  }
+
+  // 출금 기록을 저장한다.
+  private Withdrawal recordWithdrawal(Wallet wallet, UserAccountLink accountLink, BigDecimal amount, LocalDateTime time) {
+    Withdrawal withdrawal = Withdrawal.builder()
+      .userAccountLink(accountLink)
+      .wallet(wallet)
+      .amount(amount)
+      .status(WithdrawalStatus.SUCCESS)
+      .withdrawnAt(time)
+      .build();
+
+    return withdrawRepository.save(withdrawal);
   }
 }
