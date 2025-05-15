@@ -8,7 +8,6 @@ import com.hbbhbank.moamoa.transfer.dto.response.PointTransferResponseDto;
 import com.hbbhbank.moamoa.transfer.exception.TransferErrorCode;
 import com.hbbhbank.moamoa.transfer.repository.PointTransferRepository;
 import com.hbbhbank.moamoa.wallet.domain.Wallet;
-import com.hbbhbank.moamoa.wallet.domain.WalletTransactionType;
 import com.hbbhbank.moamoa.wallet.service.WalletService;
 import com.hbbhbank.moamoa.wallet.service.WalletTransactionService;
 import lombok.RequiredArgsConstructor;
@@ -32,38 +31,24 @@ public class PointTransferServiceImpl implements PointTransferService {
   @Override
   @Transactional
   public PointTransferResponseDto transferByUser(PointTransferRequestDto req) {
-    // 1. 지갑 번호로 도메인 객체 조회
     Wallet from = walletService.getWalletByNumberOrThrow(req.fromWalletNumber());
     Wallet to = walletService.getWalletByNumberOrThrow(req.toWalletNumber());
 
-    // 2. 유효성 검증
     validate(from, to, req.amount());
 
-    // 3. 송금 실행
-    return executeTransfer(from, to, req.amount());
-  }
+    // 거래 내역은 여기에서만 기록
+    walletTransactionService.recordTransaction(from.getId(), to.getId(), TRANSFER_OUT, req.amount(), false);
+    walletTransactionService.recordTransaction(to.getId(), from.getId(), TRANSFER_IN, req.amount(), false);
 
-  // 정산, 결제 등에서 이용
-  @Override
-  @Transactional
-  public void transferInternally(Wallet from, Wallet to, BigDecimal amount) {
-    validate(from, to, amount);
-    executeTransfer(from, to, amount);
-  }
+    // 도메인 저장만 공통 처리
+    Transfer transfer = executeTransfer(from, to, req.amount());
 
-  // 송금 실행 메서드 (항상 송금을 진행한 사람 기준)
-  private PointTransferResponseDto executeTransfer(Wallet from, Wallet to, BigDecimal amount) {
-
-    // 1. 송금 도메인 생성 및 저장
-    Transfer transfer = Transfer.create(from, to, amount, TransferStatus.SUCCESS);
-    pointTransferRepository.save(transfer);
-
-    // 2. 지갑 거래 내역 기록
-    walletTransactionService.recordTransaction(from.getId(), to.getId(), TRANSFER_OUT, amount, false);
-    walletTransactionService.recordTransaction(to.getId(), from.getId(), TRANSFER_IN, amount, false);
-
-    // 3. 응답 변환
     return PointTransferResponseDto.from(transfer);
+  }
+
+  private Transfer executeTransfer(Wallet from, Wallet to, BigDecimal amount) {
+    Transfer transfer = Transfer.create(from, to, amount, TransferStatus.SUCCESS);
+    return pointTransferRepository.save(transfer);
   }
 
   // 유효성 검증 메서드
