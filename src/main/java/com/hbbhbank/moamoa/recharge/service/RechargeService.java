@@ -1,7 +1,7 @@
 package com.hbbhbank.moamoa.recharge.service;
 
-import com.hbbhbank.moamoa.external.dto.request.TransferRequestDto;
-import com.hbbhbank.moamoa.external.dto.response.TransferResponseDto;
+import com.hbbhbank.moamoa.external.dto.request.transfer.TransferRequestDto;
+import com.hbbhbank.moamoa.external.dto.response.transfer.TransferResponseDto;
 import com.hbbhbank.moamoa.external.service.HwanbeeExchangeService;
 import com.hbbhbank.moamoa.external.service.HwanbeeTransferService;
 import com.hbbhbank.moamoa.global.exception.BaseException;
@@ -68,59 +68,13 @@ public class RechargeService {
       )
     );
 
-    found.updateBalance(req.amount()); // 충전된 금액만큼 잔액 업데이트
+    found.increaseBalance(req.amount()); // 충전된 금액만큼 잔액 업데이트
 
     // 충전 기록을 DB에 저장
     Recharge recharge = rechargeRepository.save(
       Recharge.builder()
         .wallet(found)
         .amount(req.amount())
-        .method(RechargeMethod.AUTO)
-        .accountLink(found.getAccountLink())
-        .rechargedAt(LocalDateTime.now())
-        .build()
-    );
-
-    return RechargeResponseDto.from(recharge);
-  }
-
-  @Transactional
-  public RechargeResponseDto autoCharge(RechargeRequestDto req) {
-    Long userId = SecurityUtil.getCurrentUserId(); // 로그인한 사용자 ID
-
-    // 직접 충전할 지갑 조회
-    Wallet found = walletRepository.findByUserIdAndCurrencyCode(userId, req.currencyCode())
-      .orElseThrow(() -> BaseException.type(WalletErrorCode.NOT_FOUND_WALLET));
-
-    Currency currency = found.getCurrency(); // 해당 지갑의 통화 코드 조회
-    BigDecimal defaultAmount = currency.getDefaultAutoChargeUnit(); // 해당 통화의 기본 충전 단위 조회
-
-    // 기본 충전 단위로 나누어 떨어지지 않으면, 올림 처리
-    // 기본 충전 단위로 나누어 떨어지면, 그대로 사용
-    // 예를 들어, 원화로 5600원이면 10000원으로 올림 처리
-    BigDecimal chargeAmount = req.amount().remainder(defaultAmount).compareTo(BigDecimal.ZERO) == 0
-      ? req.amount()
-      : req.amount().divide(defaultAmount).setScale(0, BigDecimal.ROUND_UP).multiply(defaultAmount);
-
-    // 실제 송금 실행 및 검증
-    TransferResponseDto transferResult = hwanbeeTransferService.transfer(
-      new TransferRequestDto(
-        userId,
-        found.getAccountLink().getExternalBankAccountNumber(), // 외부 계좌 번호
-        MOAMOA_ACCOUNT, // 모아모아 계좌 번호
-        chargeAmount,
-        req.currencyCode(),
-        LocalDateTime.now()
-      )
-    );
-
-    found.updateBalance(chargeAmount); // 충전된 금액만큼 잔액 업데이트
-
-    // 충전 기록을 DB에 저장
-    Recharge recharge = rechargeRepository.save(
-      Recharge.builder()
-        .wallet(found)
-        .amount(chargeAmount)
         .method(RechargeMethod.AUTO)
         .accountLink(found.getAccountLink())
         .rechargedAt(LocalDateTime.now())
