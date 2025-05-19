@@ -20,9 +20,9 @@ public class HwanbeeApiEndpoints {
   @Value("${hwanbee.transfer-url}")
   private String transferUrl;
 
-  @Value("https://api.hwanbee.com/fx/quote")
+  @Value("${hwanbee.quote-url}")
   private String quoteUrl;
 
-  @Value("https://api.hwanbee.com/fx/deal")
+  @Value("${hwanbee.deal-url}")
   private String dealUrl;
 }
