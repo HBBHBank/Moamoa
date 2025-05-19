@@ -14,11 +14,14 @@ import org.springframework.web.client.RestTemplate;
 
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class HwanbeeApiClient {
 
   @Qualifier("hwanbeeRestTemplate")
   private final RestTemplate restTemplate;
+
+  public HwanbeeApiClient(@Qualifier("hwanbeeRestTemplate") RestTemplate restTemplate) {
+    this.restTemplate = restTemplate;
+  }
 
   /**
    * 환비 API에 POST 요청을 보내고, 응답을 공통 포맷으로 파싱해 결과 데이터를 반환합니다.
