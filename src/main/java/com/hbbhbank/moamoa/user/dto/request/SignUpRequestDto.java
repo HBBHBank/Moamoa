@@ -2,7 +2,6 @@ package com.hbbhbank.moamoa.user.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
 
 public record SignUpRequestDto(
   @NotBlank(message = "이름은 필수로 입력해야 합니다.")
@@ -22,15 +21,17 @@ public record SignUpRequestDto(
   @NotBlank(message = "전화번호는 필수로 입력해야 합니다.")
   String phoneNumber,
 
-  @Size(min=6, max=20, message = "비밀번호는 6자 이상 20자 이하로 입력해야 합니다.")
+  @Pattern(regexp = "\\d{6}", message = "비밀번호는 6자리 숫자여야 합니다.")
   @NotBlank(message = "비밀번호는 필수로 입력해야 합니다.")
   String password,
 
-  @Size(min=6, max=20, message = "비밀번호는 6자 이상 20자 이하로 입력해야 합니다.")
+  @Pattern(regexp = "\\d{6}", message = "비밀번호는 6자리 숫자여야 합니다.")
   @NotBlank(message = "비밀번호는 확인은 필수로 입력해야 합니다.")
   String passwordConfirm, // 비밀번호 확인
 
   String profileImage,
+
+  Integer paymentPassword, // 결제 비밀번호
 
   Boolean serviceTermsAgreed, // 필수
   Boolean privacyPolicyAgreed, // 필수
