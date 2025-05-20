@@ -9,8 +9,7 @@ import lombok.NoArgsConstructor;
 /* 해당 엔티티의 필요성:
    실 계좌 충전 or 환전 요청 등을 환비 API에 위임할 때,
    우리 유저 → 어떤 외부 계좌를 사용할지 알 수 있어야 함.
-   환비 API의 계좌 ID는 우리 서비스 DB와 다르므로 매핑 정보가 필요.
-   또한, 자동 충전처럼 우선순위 계좌가 필요할 수도 있음. */
+   환비 API의 계좌 ID는 우리 서비스 DB와 다르므로 매핑 정보가 필요. */
 @Getter
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)

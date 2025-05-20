@@ -38,15 +38,15 @@ public class Wallet {
 
   @OneToOne(fetch = FetchType.LAZY, optional = false)
   @JoinColumn(name = "user_account_link_id", unique = true)
-  private UserAccountLink accountLink; // 환비 API 연결 계좌
+  private UserAccountLink hwanbeeAccount; // 환비 API 연결 계좌
 
   @Builder
-  public Wallet(User user, String walletNumber, Currency currency, BigDecimal balance, UserAccountLink accountLink) {
+  public Wallet(User user, String walletNumber, Currency currency, BigDecimal balance, UserAccountLink hwanbeeAccount) {
     this.user = user;
     this.walletNumber = walletNumber;
     this.currency = currency;
     this.balance = balance != null ? balance : BigDecimal.ZERO;
-    this.accountLink = accountLink;
+    this.hwanbeeAccount = hwanbeeAccount;
   }
 
   public static Wallet create(
@@ -60,7 +60,7 @@ public class Wallet {
       .walletNumber(walletNumber)
       .currency(currency)
       .balance(BigDecimal.ZERO) // 초기값 명시
-      .accountLink(accountLink)
+      .hwanbeeAccount(accountLink)
       .build();
   }
 
