@@ -31,8 +31,6 @@ public record SignUpRequestDto(
 
   String profileImage,
 
-  Integer paymentPassword, // 결제 비밀번호
-
   Boolean serviceTermsAgreed, // 필수
   Boolean privacyPolicyAgreed, // 필수
   Boolean marketingAgreed // 선택

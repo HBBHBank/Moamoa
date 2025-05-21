@@ -1,4 +1,4 @@
-package com.hbbhbank.moamoa.external.domain;
+package com.hbbhbank.moamoa.wallet.domain;
 
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -13,45 +13,38 @@ import lombok.NoArgsConstructor;
 @Getter
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@Table(name = "user_account_links")
-public class UserAccountLink { // 유저와 환비 API 실 계좌 연결 정보
+@Table(name = "hwanbee_account_links")
+public class HwanbeeAccountLink { // 유저와 환비 API 실 계좌 연결 정보
+
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
-  @Column(name = "user_account_link_id")
   private Long id;
 
   @Column(name = "user_id", nullable = false)
   private Long userId;
 
-  @Column(name = "external_bank_account_id")
-  private String externalBankAccountId; // 환비 API
-
-  @Column(name = "external_bank_account_number", nullable = false)
-  private String externalBankAccountNumber; // 환비 API
+  @Column(name = "hwanbee_bank_account_number", nullable = false)
+  private String hwanbeeBankAccountNumber; // 환비 API
 
   @Column(name = "currency_code", nullable = false, length = 10)
   private String currencyCode;
 
   @Builder
-  public UserAccountLink(Long userId, String externalBankAccountId, String externalBankAccountNumber, String currencyCode) {
+  public HwanbeeAccountLink(Long userId, String hwanbeeBankAccountNumber, String currencyCode) {
     this.userId = userId;
-    this.externalBankAccountId = externalBankAccountId;
-    this.externalBankAccountNumber = externalBankAccountNumber;
+    this.hwanbeeBankAccountNumber = hwanbeeBankAccountNumber;
     this.currencyCode = currencyCode;
   }
 
-  public static UserAccountLink create(
+  public static HwanbeeAccountLink create(
     Long userId,
-    String externalAccountId,
-    String externalAccountNumber,
+    String hwanbeeBankAccountNumber,
     String currencyCode
   ) {
-    return UserAccountLink.builder()
+    return HwanbeeAccountLink.builder()
       .userId(userId)
-      .externalBankAccountId(externalAccountId)
-      .externalBankAccountNumber(externalAccountNumber)
+      .hwanbeeBankAccountNumber(hwanbeeBankAccountNumber)
       .currencyCode(currencyCode)
       .build();
   }
 }
-

@@ -32,6 +32,6 @@ public enum CurrencyUnit {
         return unit;
       }
     }
-    throw BaseException.type(WalletErrorCode.UNSUPPORTED_CURRENCY_CODE);
+    throw BaseException.type(WalletErrorCode.CURRENCY_CODE_NOT_FOUND);
   }
 }

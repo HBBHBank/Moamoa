@@ -65,3 +65,12 @@ dependencies {
 tasks.named('test') {
     useJUnitPlatform()
 }
+
+// QueryDSL Q파일 생성 디렉토리 자동 인식
+sourceSets {
+    main {
+        java {
+            srcDirs += ["src/main/java", "build/generated/sources/annotationProcessor/java/main"]
+        }
+    }
+}

@@ -1,6 +1,5 @@
 package com.hbbhbank.moamoa.wallet.domain;
 
-import com.hbbhbank.moamoa.external.domain.UserAccountLink;
 import com.hbbhbank.moamoa.global.exception.BaseException;
 import com.hbbhbank.moamoa.user.domain.User;
 import com.hbbhbank.moamoa.wallet.exception.WalletErrorCode;
@@ -38,10 +37,10 @@ public class Wallet {
 
   @OneToOne(fetch = FetchType.LAZY, optional = false)
   @JoinColumn(name = "user_account_link_id", unique = true)
-  private UserAccountLink hwanbeeAccount; // 환비 API 연결 계좌
+  private HwanbeeAccountLink hwanbeeAccount; // 환비 API 연결 계좌
 
   @Builder
-  public Wallet(User user, String walletNumber, Currency currency, BigDecimal balance, UserAccountLink hwanbeeAccount) {
+  public Wallet(User user, String walletNumber, Currency currency, BigDecimal balance, HwanbeeAccountLink hwanbeeAccount) {
     this.user = user;
     this.walletNumber = walletNumber;
     this.currency = currency;
@@ -53,14 +52,14 @@ public class Wallet {
     User user,
     String walletNumber,
     Currency currency,
-    UserAccountLink accountLink
+    HwanbeeAccountLink hwanbeeAccount
   ) {
     return Wallet.builder()
       .user(user)
       .walletNumber(walletNumber)
       .currency(currency)
       .balance(BigDecimal.ZERO) // 초기값 명시
-      .hwanbeeAccount(accountLink)
+      .hwanbeeAccount(hwanbeeAccount)
       .build();
   }
 

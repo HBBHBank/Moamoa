@@ -1,4 +1,4 @@
-package com.hbbhbank.moamoa.wallet.dto.response;
+package com.hbbhbank.moamoa.wallet.dto.response.wallet;
 
 import com.hbbhbank.moamoa.wallet.domain.Wallet;
 

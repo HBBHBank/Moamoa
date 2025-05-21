@@ -1,10 +1,11 @@
 package com.hbbhbank.moamoa.external.dto.response.account;
 
-import java.time.LocalDateTime;
+import com.fasterxml.jackson.annotation.JsonInclude;
 
+// 최상위 응답 record
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public record VerificationCheckResponseDto(
-  String result,
-  String externalBankAccountId,
-  LocalDateTime verifiedAt
-) {
-}
+  int status,
+  String message,
+  VerificationAccountDataDto data
+) {}

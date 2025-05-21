@@ -13,7 +13,7 @@ public interface WalletRepositoryCustom {
 
   boolean existsByUserIdAndCurrencyCode(Long userId, String currencyCode);
 
-  List<Wallet> findAllByUserWithCurrency(Long userId);
+  List<Wallet> findAllByUser(Long userId);
 
   Optional<Wallet> findByWalletNumber(String walletNumber);
 }

@@ -1,15 +1,13 @@
 package com.hbbhbank.moamoa.external.dto.request.account;
 
 public record VerificationCheckRequestDto(
-  Long userId, 
-  String externalBankAccountNumber,
-  String verificationCode
+  String transactionId,
+  Integer inputCode
 ) {
-  public static VerificationCheckRequestDto of(Long userId, AccountVerificationContext ctx) {
+  public static VerificationCheckRequestDto of(VerificationCheckRequestDto dto) {
     return new VerificationCheckRequestDto(
-      userId,
-      ctx.externalAccountNumber(),
-      ctx.verificationCode()
+      dto.transactionId(),
+      dto.inputCode()
     );
   }
 }

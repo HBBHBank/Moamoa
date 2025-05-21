@@ -1,6 +1,5 @@
 package com.hbbhbank.moamoa.wallet.domain;
 
-import com.hbbhbank.moamoa.external.domain.UserAccountLink;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -29,7 +28,7 @@ public class ExternalWalletTransaction {
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "user_account_link_id", nullable = false)
-  private UserAccountLink hwanbeeAccount; // 사용자의 환비 계좌 정보
+  private HwanbeeAccountLink hwanbeeAccount; // 사용자의 환비 계좌 정보
 
   @Enumerated(EnumType.STRING)
   @Column(name = "transaction_type", nullable = false)
@@ -51,7 +50,7 @@ public class ExternalWalletTransaction {
   }
 
   @Builder
-  public ExternalWalletTransaction(Wallet wallet, UserAccountLink hwanbeeAccount, WalletTransactionType type, BigDecimal amount) {
+  public ExternalWalletTransaction(Wallet wallet, HwanbeeAccountLink hwanbeeAccount, WalletTransactionType type, BigDecimal amount) {
     this.wallet = wallet;
     this.hwanbeeAccount = hwanbeeAccount;
     this.type = type;
@@ -60,7 +59,7 @@ public class ExternalWalletTransaction {
 
   public static ExternalWalletTransaction create(
     Wallet wallet,
-    UserAccountLink hwanbeeAccount,
+    HwanbeeAccountLink hwanbeeAccount,
     WalletTransactionType type,
     BigDecimal amount
   ) {

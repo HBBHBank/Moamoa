@@ -1,4 +1,4 @@
-package com.hbbhbank.moamoa.wallet.dto.request;
+package com.hbbhbank.moamoa.wallet.dto.request.transaction;
 
 import com.hbbhbank.moamoa.wallet.domain.WalletTransactionType;
 import jakarta.validation.constraints.NotBlank;

@@ -48,7 +48,7 @@ public class SettlementGroup {
 
   @ManyToOne(fetch = FetchType.LAZY) // 하나의 지갑은 여러 개의 정산 그룹에서 거래 내역 공유 대상으로 참조될 수 있음.
   @JoinColumn(name = "wallet_id", nullable = false)
-  private Wallet referencedWallet; // 정산 시 거래 내역 필터링 기준이 되는 지갑
+  private Wallet referencedWallet; // 방장의 지갑
 
   @CreationTimestamp
   @Column(name = "group_created_at", nullable = false)

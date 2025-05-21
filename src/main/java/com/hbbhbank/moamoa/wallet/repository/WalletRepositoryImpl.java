@@ -61,7 +61,7 @@ public class WalletRepositoryImpl implements WalletRepositoryCustom {
   }
 
   @Override
-  public List<Wallet> findAllByUserWithCurrency(Long userId) {
+  public List<Wallet> findAllByUser(Long userId) {
     return queryFactory
       .selectFrom(wallet)
       .join(wallet.currency, currency).fetchJoin()
