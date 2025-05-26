@@ -20,19 +20,6 @@ public class WalletRepositoryImpl implements WalletRepositoryCustom {
   private final JPAQueryFactory queryFactory;
 
   @Override
-  public Wallet findByIdOrThrow(Long walletId) {
-    Wallet result = queryFactory
-      .selectFrom(wallet)
-      .where(wallet.id.eq(walletId))
-      .fetchOne();
-
-    if (result == null) {
-      throw BaseException.type(WalletErrorCode.NOT_FOUND_WALLET);
-    }
-    return result;
-  }
-
-  @Override
   public Optional<Wallet> findByUserIdAndCurrencyCode(Long userId, String currencyCode) {
     return Optional.ofNullable(
       queryFactory
