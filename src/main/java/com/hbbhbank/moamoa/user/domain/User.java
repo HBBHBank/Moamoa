@@ -11,6 +11,8 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.DynamicUpdate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.time.LocalDateTime;
+
 @Getter
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -44,6 +46,15 @@ public class User {
   @Column(name = "role", nullable = false)
   @Enumerated(EnumType.STRING)
   private ERole role; // Spring Security에서 사용하는 역할
+
+  @Column(name = "hwanbee_access_token")
+  private String hwanbeeAccessToken;
+
+  @Column(name = "hwanbee_refresh_token")
+  private String hwanbeeRefreshToken;
+
+  @Column(name = "hwanbee_token_expire_at")
+  private LocalDateTime hwanbeeTokenExpireAt;
 
   @Builder
   public User(String name, String email, String phoneNumber, String password, ProfileImage profileImage, TermsAgreement terms, ERole role) {
@@ -88,5 +99,12 @@ public class User {
     if (!encoder.matches(rawPassword, this.password)) {
       throw BaseException.type(UserErrorCode.INVALID_PASSWORD);
     }
+  }
+
+  // 토큰 발급 시 호출되는 메서드
+  public void updateHwanbeeTokens(String accessToken, String refreshToken, int expiresInSeconds) {
+    this.hwanbeeAccessToken = accessToken;
+    this.hwanbeeRefreshToken = refreshToken;
+    this.hwanbeeTokenExpireAt = LocalDateTime.now().plusSeconds(expiresInSeconds);
   }
 }

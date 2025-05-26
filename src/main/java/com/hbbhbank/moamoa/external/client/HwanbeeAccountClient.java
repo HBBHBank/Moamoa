@@ -19,7 +19,7 @@ public interface HwanbeeAccountClient {
    * @return 거래 ID, 요청 상태, 1원 송금이 요청되었다는 메세지 (1원 송금은 은행 프론트에서 확인)
    * @throws com.hbbhbank.moamoa.global.exception.BaseException 인증 요청 실패 시 예외 발생
    */
-  VerificationCodeResponseDto requestVerificationCode(VerificationCodeRequestDto dto);
+  VerificationCodeResponseDto requestVerificationCode(VerificationCodeRequestDto dto, String accessToken);
 
   /**
    * 사용자가 입력한 인증 코드의 유효성을 환비 API를 통해 검증합니다.

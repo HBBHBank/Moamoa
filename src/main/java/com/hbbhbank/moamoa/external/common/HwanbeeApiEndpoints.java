@@ -1,4 +1,4 @@
-package com.hbbhbank.moamoa.external.client.common;
+package com.hbbhbank.moamoa.external.common;
 
 import lombok.Getter;
 import org.springframework.beans.factory.annotation.Value;
@@ -13,9 +13,6 @@ public class HwanbeeApiEndpoints {
 
   @Value("${hwanbee.verification-check-url}")
   private String verificationCheckUrl;
-
-  @Value("${hwanbee.auth-url}")
-  private String authUrl;
 
   @Value("${hwanbee.transfer-url}")
   private String transferUrl;
