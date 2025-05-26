@@ -14,8 +14,8 @@ public class HwanbeeApiEndpoints {
   @Value("${hwanbee.verification-check-url}")
   private String verificationCheckUrl;
 
-  @Value("${hwanbee.transfer-url}")
-  private String transferUrl;
+  @Value("${hwanbee.remittance-url}")
+  private String remittanceUrl;
 
   @Value("${hwanbee.quote-url}")
   private String quoteUrl;
