@@ -7,8 +7,6 @@ import java.util.Optional;
 
 public interface WalletRepositoryCustom {
 
-  Wallet findByIdOrThrow(Long walletId);
-
   Optional<Wallet> findByUserIdAndCurrencyCode(Long userId, String currencyCode);
 
   boolean existsByUserIdAndCurrencyCode(Long userId, String currencyCode);
