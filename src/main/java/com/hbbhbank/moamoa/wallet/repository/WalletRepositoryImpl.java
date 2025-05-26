@@ -1,8 +1,6 @@
 package com.hbbhbank.moamoa.wallet.repository;
 
-import com.hbbhbank.moamoa.global.exception.BaseException;
 import com.hbbhbank.moamoa.wallet.domain.Wallet;
-import com.hbbhbank.moamoa.wallet.exception.WalletErrorCode;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
@@ -10,8 +8,8 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.Optional;
 
-import static com.hbbhbank.moamoa.wallet.domain.QWallet.wallet;
 import static com.hbbhbank.moamoa.wallet.domain.QCurrency.currency;
+import static com.hbbhbank.moamoa.wallet.domain.QWallet.wallet;
 
 @Repository
 @RequiredArgsConstructor
