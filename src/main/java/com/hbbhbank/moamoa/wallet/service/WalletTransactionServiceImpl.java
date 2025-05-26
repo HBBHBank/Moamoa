@@ -4,8 +4,9 @@ import com.hbbhbank.moamoa.wallet.domain.ExternalWalletTransaction;
 import com.hbbhbank.moamoa.wallet.domain.InternalWalletTransaction;
 import com.hbbhbank.moamoa.wallet.dto.request.transaction.TransactionFilterRequestDto;
 import com.hbbhbank.moamoa.wallet.dto.response.transaction.TransactionResponseDto;
+import com.hbbhbank.moamoa.wallet.repository.ExternalWalletTransactionRepository;
+import com.hbbhbank.moamoa.wallet.repository.InternalWalletTransactionRepository;
 import com.querydsl.core.BooleanBuilder;
-import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
@@ -21,15 +22,13 @@ import static com.hbbhbank.moamoa.wallet.domain.QExternalWalletTransaction.exter
 @RequiredArgsConstructor
 public class WalletTransactionServiceImpl implements WalletTransactionService {
 
-  private final JPAQueryFactory queryFactory;
+  private final InternalWalletTransactionRepository internalRepo;
+  private final ExternalWalletTransactionRepository externalRepo;
 
-  // 전체/지갑별/기간별/구분별 모두 처리
   @Override
   public Page<TransactionResponseDto> findAll(TransactionFilterRequestDto filter) {
 
-    // 내부 거래 조건 빌드
     BooleanBuilder internalCond = new BooleanBuilder();
-
     if (filter.walletId() != null)
       internalCond.and(internalWalletTransaction.wallet.id.eq(filter.walletId()));
     if (filter.currencyCode() != null)
@@ -39,7 +38,6 @@ public class WalletTransactionServiceImpl implements WalletTransactionService {
     if (filter.startDate() != null && filter.endDate() != null)
       internalCond.and(internalWalletTransaction.transactedAt.between(filter.startDate(), filter.endDate()));
 
-    // 외부 거래 조건 빌드
     BooleanBuilder externalCond = new BooleanBuilder();
     if (filter.walletId() != null)
       externalCond.and(externalWalletTransaction.wallet.id.eq(filter.walletId()));
@@ -50,13 +48,7 @@ public class WalletTransactionServiceImpl implements WalletTransactionService {
     if (filter.startDate() != null && filter.endDate() != null)
       externalCond.and(externalWalletTransaction.transactedAt.between(filter.startDate(), filter.endDate()));
 
-    // 내부 거래 조회
-    List<TransactionResponseDto> internals = queryFactory
-      .selectFrom(internalWalletTransaction)
-      .where(internalCond)
-      .orderBy(internalWalletTransaction.transactedAt.desc())
-      .fetch()
-      .stream()
+    List<TransactionResponseDto> internals = internalRepo.findAllByPredicate(internalCond).stream()
       .map(tx -> new TransactionResponseDto(
         tx.getId(),
         tx.getWallet().getWalletNumber(),
@@ -69,13 +61,7 @@ public class WalletTransactionServiceImpl implements WalletTransactionService {
         false
       )).toList();
 
-    // 외부 거래 조회
-    List<TransactionResponseDto> externals = queryFactory
-      .selectFrom(externalWalletTransaction)
-      .where(externalCond)
-      .orderBy(externalWalletTransaction.transactedAt.desc())
-      .fetch()
-      .stream()
+    List<TransactionResponseDto> externals = externalRepo.findAllByPredicate(externalCond).stream()
       .map(tx -> new TransactionResponseDto(
         tx.getId(),
         tx.getWallet().getWalletNumber(),
@@ -88,7 +74,6 @@ public class WalletTransactionServiceImpl implements WalletTransactionService {
         true
       )).toList();
 
-    // 통합 정렬 (최신순) 후 페이징
     List<TransactionResponseDto> merged = Stream.concat(internals.stream(), externals.stream())
       .sorted(Comparator.comparing(TransactionResponseDto::transactedAt).reversed())
       .toList();
@@ -101,20 +86,15 @@ public class WalletTransactionServiceImpl implements WalletTransactionService {
     return new PageImpl<>(merged.subList(start, end), PageRequest.of(page, size), merged.size());
   }
 
-  // 최신 거래 1건 조회
   @Override
   public TransactionResponseDto findLatest() {
-    InternalWalletTransaction internal = queryFactory
-      .selectFrom(internalWalletTransaction)
-      .orderBy(internalWalletTransaction.transactedAt.desc())
-      .limit(1)
-      .fetchOne();
+    InternalWalletTransaction internal = internalRepo.findAllByPredicate(new BooleanBuilder()).stream()
+      .max(Comparator.comparing(InternalWalletTransaction::getTransactedAt))
+      .orElse(null);
 
-    ExternalWalletTransaction external = queryFactory
-      .selectFrom(externalWalletTransaction)
-      .orderBy(externalWalletTransaction.transactedAt.desc())
-      .limit(1)
-      .fetchOne();
+    ExternalWalletTransaction external = externalRepo.findAllByPredicate(new BooleanBuilder()).stream()
+      .max(Comparator.comparing(ExternalWalletTransaction::getTransactedAt))
+      .orElse(null);
 
     TransactionResponseDto iRes = internal == null ? null :
       new TransactionResponseDto(

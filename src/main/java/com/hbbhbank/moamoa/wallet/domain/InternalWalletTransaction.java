@@ -50,10 +50,11 @@ public class InternalWalletTransaction {
   }
 
   @Builder
-  public InternalWalletTransaction(Wallet wallet, Wallet counterWallet, WalletTransactionType type, BigDecimal amount) {
+  public InternalWalletTransaction(Wallet wallet, Wallet counterWallet, WalletTransactionType type, WalletTransactionStatus status, BigDecimal amount) {
     this.wallet = wallet;
     this.counterWallet = counterWallet;
     this.type = type;
+    this.status = status;
     this.amount = amount;
   }
 
@@ -61,12 +62,14 @@ public class InternalWalletTransaction {
     Wallet wallet,
     Wallet counterWallet,
     WalletTransactionType type,
+    WalletTransactionStatus status,
     BigDecimal amount
   ) {
     return InternalWalletTransaction.builder()
       .wallet(wallet)
       .counterWallet(counterWallet)
       .type(type)
+      .status(status)
       .amount(amount)
       .build();
   }

@@ -50,10 +50,11 @@ public class ExternalWalletTransaction {
   }
 
   @Builder
-  public ExternalWalletTransaction(Wallet wallet, HwanbeeAccountLink hwanbeeAccount, WalletTransactionType type, BigDecimal amount) {
+  public ExternalWalletTransaction(Wallet wallet, HwanbeeAccountLink hwanbeeAccount, WalletTransactionType type, WalletTransactionStatus status, BigDecimal amount) {
     this.wallet = wallet;
     this.hwanbeeAccount = hwanbeeAccount;
     this.type = type;
+    this.status = status;
     this.amount = amount;
   }
 
@@ -61,12 +62,14 @@ public class ExternalWalletTransaction {
     Wallet wallet,
     HwanbeeAccountLink hwanbeeAccount,
     WalletTransactionType type,
+    WalletTransactionStatus status,
     BigDecimal amount
   ) {
     return ExternalWalletTransaction.builder()
       .wallet(wallet)
       .hwanbeeAccount(hwanbeeAccount)
       .type(type)
+      .status(status)
       .amount(amount)
       .build();
   }
