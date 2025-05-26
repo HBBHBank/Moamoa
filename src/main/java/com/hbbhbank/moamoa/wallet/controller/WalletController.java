@@ -5,7 +5,6 @@ import com.hbbhbank.moamoa.global.common.BaseResponse;
 import com.hbbhbank.moamoa.wallet.dto.request.wallet.CreateWalletRequestDto;
 import com.hbbhbank.moamoa.wallet.dto.request.wallet.SearchWalletRequestDto;
 import com.hbbhbank.moamoa.wallet.dto.response.wallet.CreateWalletResponseDto;
-import com.hbbhbank.moamoa.wallet.dto.response.wallet.GetWalletInfoResponseDto;
 import com.hbbhbank.moamoa.wallet.dto.response.wallet.SearchWalletResponseDto;
 import com.hbbhbank.moamoa.wallet.service.WalletServiceImpl;
 import jakarta.validation.Valid;
@@ -34,9 +33,10 @@ public class WalletController {
    */
   @PostMapping("/verification-code")
   public ResponseEntity<Void> generateVerificationCode(
-    @RequestBody @Valid VerificationCodeRequestDto requestDto
+    @RequestBody @Valid VerificationCodeRequestDto requestDto,
+    @RequestParam String authorizationCode
   ) {
-    walletService.requestVerificationCode(requestDto);
+    walletService.requestVerificationCode(requestDto, authorizationCode);
     return ResponseEntity.noContent().build();
   }
 
@@ -81,18 +81,6 @@ public class WalletController {
     return ResponseEntity.ok(BaseResponse.success(
       walletService.getAllWalletsByUser())
     );
-  }
-
-  /**
-   * 송금 전 받는 사람의 지갑 번호를 통해 사용자 일부 실명과 통화 정보를 조회합니다.
-   * 프론트엔드에서는 이를 통해 사용자에게 송금 대상 지갑이 정확한지 시각적으로 확인시킬 수 있습니다.
-   *
-   * @param walletNumber 지갑 번호
-   * @return 받는 사람의 실명 일부, 지갑 번호, 통화 코드 정보
-   */
-  @GetMapping("/recipient")
-  public ResponseEntity<BaseResponse<GetWalletInfoResponseDto>> getRecipientInfo(@RequestParam String walletNumber) {
-    return ResponseEntity.ok(BaseResponse.success(walletService.getReceiverWalletInfo(walletNumber)));
   }
 
 }

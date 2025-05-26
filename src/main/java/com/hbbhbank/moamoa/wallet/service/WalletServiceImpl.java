@@ -1,5 +1,6 @@
 package com.hbbhbank.moamoa.wallet.service;
 
+import com.hbbhbank.moamoa.external.auth.OAuth2TokenService;
 import com.hbbhbank.moamoa.external.client.HwanbeeAccountClient;
 import com.hbbhbank.moamoa.external.dto.request.account.VerificationCheckRequestDto;
 import com.hbbhbank.moamoa.external.dto.request.account.VerificationCodeRequestDto;
@@ -8,6 +9,8 @@ import com.hbbhbank.moamoa.external.dto.response.account.VerificationCheckRespon
 import com.hbbhbank.moamoa.external.dto.response.account.VerificationCodeResponseDto;
 import com.hbbhbank.moamoa.global.exception.BaseException;
 import com.hbbhbank.moamoa.user.domain.User;
+import com.hbbhbank.moamoa.user.exception.UserErrorCode;
+import com.hbbhbank.moamoa.user.repository.UserRepository;
 import com.hbbhbank.moamoa.user.service.UserService;
 import com.hbbhbank.moamoa.wallet.domain.AccountVerificationRequest;
 import com.hbbhbank.moamoa.wallet.domain.Currency;
@@ -15,7 +18,6 @@ import com.hbbhbank.moamoa.wallet.domain.HwanbeeAccountLink;
 import com.hbbhbank.moamoa.wallet.domain.Wallet;
 import com.hbbhbank.moamoa.wallet.dto.request.wallet.SearchWalletRequestDto;
 import com.hbbhbank.moamoa.wallet.dto.response.wallet.CreateWalletResponseDto;
-import com.hbbhbank.moamoa.wallet.dto.response.wallet.GetWalletInfoResponseDto;
 import com.hbbhbank.moamoa.wallet.dto.response.wallet.SearchWalletResponseDto;
 import com.hbbhbank.moamoa.wallet.exception.WalletErrorCode;
 import com.hbbhbank.moamoa.wallet.repository.AccountVerificationRequestRepository;
@@ -38,42 +40,48 @@ public class WalletServiceImpl implements WalletService {
   private final AccountVerificationRequestRepository accountVerificationRequestRepository;
   private final HwanbeeLinkRepository hwanbeeLinkRepository;
   private final CurrencyService currencyService;
+  private final UserRepository userRepository;
+  private final OAuth2TokenService oAuth2TokenClient;
 
   /**
    * 환비에 인증코드 발급 요청
    */
   @Override
-  public void requestVerificationCode(VerificationCodeRequestDto req) {
+  public void requestVerificationCode(VerificationCodeRequestDto req, String authorizationCode) {
+    Long userId = userService.getCurrentUserId();
+    User user = userRepository.findById(userId)
+      .orElseThrow(() -> new BaseException(UserErrorCode.USER_NOT_FOUND));
 
-    // 1. 환비 API에 인증코드 요청
-    VerificationCodeResponseDto response = hwanbeeAccountClient.requestVerificationCode(req);
+    // access token이 없거나 만료되었으면 발급
+    String accessToken = oAuth2TokenClient.ensureAccessToken(user, authorizationCode);
 
-    // 2. 추후 인증코드 확인을 위해 응답에서 transactionId 추출
+    // 환비 API 호출 - 1원 송금 요청
+    VerificationCodeResponseDto response = hwanbeeAccountClient.requestVerificationCode(req, accessToken);
+
     String transactionId = response.data() != null ? response.data().transactionId() : null;
-
     if (transactionId == null) {
       throw new BaseException(WalletErrorCode.FAIL_VERIFICATION);
     }
 
-    // 3. DB에 transactionId 저장
+    // 추후 확인용으로 인증 요청 저장
     accountVerificationRequestRepository.save(AccountVerificationRequest.from(transactionId));
   }
 
   /**
-   * 외부 계좌 인증이 완료된 후 지갑 생성
+   * 환비 계좌 인증이 완료된 후 지갑 생성
    */
   @Override
   @Transactional
   public CreateWalletResponseDto createWalletAfterVerification(Integer inputCode) {
     Long userId = userService.getCurrentUserId();
 
-    // 1. 가장 최근 인증 요청(transactionId) 찾기
+    // 가장 최근의 인증 요청(transactionId) 가져오기
     AccountVerificationRequest verificationRequest = accountVerificationRequestRepository
       .findByUserId(userId)
       .orElseThrow(() -> new BaseException(WalletErrorCode.FAIL_VERIFICATION));
     String transactionId = verificationRequest.getTransactionId();
 
-    // 2. 환비 API에 인증 코드 검증 요청
+    // 입력 코드로 인증 확인
     VerificationCheckRequestDto checkRequest = new VerificationCheckRequestDto(transactionId, inputCode);
     VerificationCheckResponseDto checkResponse = hwanbeeAccountClient.verifyInputCode(checkRequest);
 
@@ -82,11 +90,11 @@ public class WalletServiceImpl implements WalletService {
       throw new BaseException(WalletErrorCode.FAIL_VERIFICATION);
     }
 
-    // 3. User와 Currency 객체 저장
+    // 통화 및 사용자 정보 조회
     User user = userService.getByIdOrThrow(userId);
     Currency currency = currencyService.getByCodeOrThrow(data.currencyCode());
 
-    // 4. 환비 계좌 정보 저장하기
+    // 환비 계좌 저장 (중복 체크)
     HwanbeeAccountLink accountLink = hwanbeeLinkRepository
       .findByUserIdAndHwanbeeBankAccountNumber(userId, data.accountNumber())
       .orElseGet(() -> {
@@ -95,30 +103,26 @@ public class WalletServiceImpl implements WalletService {
           data.accountNumber(),
           data.currencyCode()
         );
-
         return hwanbeeLinkRepository.save(link);
       });
 
-    // 4. 지갑 번호 생성
-    String walletNumber = generateWalletNumber(userId, data.currencyCode());
-
-    // 5. 중복 지갑 체크
+    // 중복 지갑 확인
     if (walletRepository.existsByUserIdAndCurrencyCode(userId, data.currencyCode())) {
       throw new BaseException(WalletErrorCode.DUPLICATE_WALLET);
     }
 
-    // 6. Wallet 생성 및 저장
-    Wallet wallet = Wallet.create(
-      user, // User 엔티티
-      walletNumber, // 지갑 번호 (내부 규칙 생성)
-      currency,   // Currency 엔티티
-      accountLink // HwanbeeAccountLink 엔티티
-    );
+    // 지갑 번호 생성 및 지갑 생성
+    String walletNumber = generateWalletNumber(userId, data.currencyCode());
+    Wallet wallet = Wallet.create(user, walletNumber, currency, accountLink);
     walletRepository.save(wallet);
 
     return CreateWalletResponseDto.from(data.accountNumber());
   }
 
+
+  /**
+   * 사용자별 통화 코드로 지갑 조회
+   */
   @Override
   public SearchWalletResponseDto getWalletByUserAndCurrency(SearchWalletRequestDto req) {
     Long userId = userService.getCurrentUserId();
@@ -129,7 +133,9 @@ public class WalletServiceImpl implements WalletService {
     return SearchWalletResponseDto.from(wallet);
   }
 
-  // 사용자별 모든 지갑 목록 조회
+  /**
+   * 사용자별 모든 지갑 목록 조회
+   */
   @Override
   @Transactional
   public List<SearchWalletResponseDto> getAllWalletsByUser() {
@@ -140,21 +146,18 @@ public class WalletServiceImpl implements WalletService {
       .collect(Collectors.toList());
   }
 
-  @Override
-  public GetWalletInfoResponseDto getReceiverWalletInfo(String walletNumber) {
-    Wallet wallet = walletRepository.findByWalletNumber(walletNumber)
-      .orElseThrow(() -> BaseException.type(WalletErrorCode.NOT_FOUND_WALLET));
-
-    return GetWalletInfoResponseDto.from(wallet);
-  }
-
+  /**
+   * 지갑 번호로 지갑 조회
+   */
   @Override
   public Wallet getWalletByNumberOrThrow(String walletNumber) {
     return walletRepository.findByWalletNumber(walletNumber)
       .orElseThrow(() -> BaseException.type(WalletErrorCode.NOT_FOUND_WALLET));
   }
 
-  // 지갑 번호 생성
+  /**
+   * 지갑 번호 생성
+   */
   private String generateWalletNumber(Long userId, String currencyCode) {
     int random = (int)(Math.random() * 90_000_000) + 10_000_000;
     return String.format("%s-%d-%08d", currencyCode, userId, random);
