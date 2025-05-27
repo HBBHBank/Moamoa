@@ -58,7 +58,7 @@ public class UserService {
   }
 
   // 현재 로그인된 사용자 조회
-  private User getCurrentUser() {
+  public User getCurrentUser() {
     Long userId = SecurityUtil.getCurrentUserId();
     return userRepository.findById(userId)
       .orElseThrow(() -> new BaseException(UserErrorCode.USER_NOT_FOUND));

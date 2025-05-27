@@ -7,7 +7,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum GroupStatus {
   ACTIVE("ACTIVE", "활성화됨"),
-  INACTIVE("INACTIVE", "비활성화됨");
+  INACTIVE("INACTIVE", "비활성화됨"),
+  ;
 
   private final String code;
   private final String message;

@@ -23,7 +23,7 @@ public class SettlementMember {
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "settlement_group_id", nullable = false)
-  private SettlementGroup group;
+  private SettlementGroup group; // 소속된 정산 그룹
 
   @Column(name = "has_transferred", nullable = false)
   private boolean hasTransferred = false; // 송금 여부

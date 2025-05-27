@@ -54,6 +54,12 @@ public class SettlementGroup {
   @Column(name = "group_created_at", nullable = false)
   private LocalDateTime createdAt; // 정산 그룹 생성
 
+  @Column(name = "join_code_expired_at")
+  private LocalDateTime joinCodeExpiredAt; // 초대 코드 만료 시점
+
+  @Column(name = "join_code_attempt_count", nullable = false)
+  private int joinAttemptCount = 0; // 초대 코드 입력 시도 횟수
+
   // 공유 거래 내역 필터링 기준 시점
   @Column(name = "share_start_at")
   private LocalDateTime transactionShareStartAt; // 거래 공유 시작 시점
@@ -61,9 +67,15 @@ public class SettlementGroup {
   @Column(name = "transaction_share_stop_at")
   private LocalDateTime transactionShareStopAt;  // 정산 시작 버튼 누른 시점
 
+  @Column(nullable = false)
+  private Integer maxMembers;
+
+  @OneToMany(mappedBy = "group", cascade = CascadeType.ALL, orphanRemoval = true)
+  private List<SettlementSharePeriod> sharePeriods = new ArrayList<>();
+
   @Builder
   public SettlementGroup(String groupName, String joinCode, GroupStatus groupStatus, SettlementStatus settlementStatus,
-                         User host, Wallet referencedWallet, LocalDateTime transactionShareStartAt) {
+                         User host, Wallet referencedWallet, LocalDateTime transactionShareStartAt, Integer maxMembers) {
     this.groupName = groupName;
     this.joinCode = joinCode;
     this.groupStatus = groupStatus;
@@ -71,6 +83,7 @@ public class SettlementGroup {
     this.host = host;
     this.referencedWallet = referencedWallet;
     this.transactionShareStartAt = transactionShareStartAt;
+    this.maxMembers = maxMembers;
   }
 
   public void deactivate() {
@@ -97,6 +110,36 @@ public class SettlementGroup {
     this.settlementStatus = SettlementStatus.COMPLETE;
   }
 
-  // 정산 완료 후 공유 재시작 시에는 shareStartAt을 업데이트하고, shareStopAt은 null로 초기화
+  public void incrementJoinAttemptCount() {
+    this.joinAttemptCount++;
+  }
+
+  // 초대 코드 검증
+  public boolean isJoinCodeValid() {
+    return this.joinCode != null &&
+      this.joinCodeExpiredAt != null &&
+      this.joinCodeExpiredAt.isAfter(LocalDateTime.now());
+  }
+
+  // 정산 완료 후 공유 재시작 시
+  public void restartSharing(LocalDateTime newStartAt) {
+    updateShareStartAt(newStartAt);
+    updateShareStopAt(null);
+  }
+
+  // 초대 코드 재발급
+  public void updateJoinCode(String code, LocalDateTime expiredAt) {
+    this.joinCode = code;
+    this.joinCodeExpiredAt = expiredAt;
+    this.joinAttemptCount = 0;
+  }
+
+  public void markSettlementBefore() {
+    this.settlementStatus = SettlementStatus.BEFORE;
+  }
+
+  public boolean hasMember(Long userId) {
+    return members.stream().anyMatch(m -> m.getUser().getId().equals(userId));
+  }
 }
 
