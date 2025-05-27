@@ -16,7 +16,8 @@ public final class Constants {
 
   public static final List<String> NOT_NEED_AUTH = List.of(
     "/api/v1/auth/signup",
-    "/api/v1/auth/login"
+    "/api/v1/auth/login",
+    "/api/v1/auth/jwt/reissue"
   );
 
   public static final String MOAMOA_ACCOUNT = "130-999-888888"; // 모아모아 법인 계좌 번호
