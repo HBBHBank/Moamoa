@@ -9,10 +9,10 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public enum ProfileImage {
-  IMAGE1("GOM_1", "img_gom_1"),
-  IMAGE2("GOM_2", "img_gom_2"),
-  IMAGE3("GOM_3", "img_gom_3"),
-  IMAGE4("GOM_4", "img_gom_4");
+  IMAGE1("IMAGE_1", "img_1"),
+  IMAGE2("IMAGE_2", "img_2"),
+  IMAGE3("IMAGE_3", "img_3"),
+  IMAGE4("IMAGE_4", "img_4");
 
   private final String key;
   private final String value;
