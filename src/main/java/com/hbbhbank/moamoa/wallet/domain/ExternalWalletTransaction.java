@@ -27,7 +27,7 @@ public class ExternalWalletTransaction {
   private Wallet wallet; // 주체 지갑
 
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "user_account_link_id", nullable = false)
+  @JoinColumn(name = "hwanbee_account_link_id", nullable = false)
   private HwanbeeAccountLink hwanbeeAccount; // 사용자의 환비 계좌 정보
 
   @Enumerated(EnumType.STRING)

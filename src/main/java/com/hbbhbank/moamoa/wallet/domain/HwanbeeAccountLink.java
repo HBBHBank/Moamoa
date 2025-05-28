@@ -18,6 +18,7 @@ public class HwanbeeAccountLink { // 유저와 환비 API 실 계좌 연결 정�
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Column(name = "hwanbee_account_link_id")
   private Long id;
 
   @Column(name = "user_id", nullable = false)

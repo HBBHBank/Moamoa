@@ -36,7 +36,7 @@ public class Wallet {
   private BigDecimal balance = BigDecimal.ZERO; // 잔액 (포인트 단위)
 
   @OneToOne(fetch = FetchType.LAZY, optional = false)
-  @JoinColumn(name = "user_account_link_id", unique = true)
+  @JoinColumn(name = "hwanbee_account_link_id", unique = true)
   private HwanbeeAccountLink hwanbeeAccount; // 환비 API 연결 계좌
 
   @Builder
