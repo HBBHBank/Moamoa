@@ -112,7 +112,7 @@ public class WalletServiceImpl implements WalletService {
     }
 
     // 지갑 번호 생성 및 지갑 생성
-    String walletNumber = generateWalletNumber(userId, data.currencyCode());
+    String walletNumber = generateWalletNumber();
     Wallet wallet = Wallet.create(user, walletNumber, currency, accountLink);
     walletRepository.save(wallet);
 
@@ -156,10 +156,14 @@ public class WalletServiceImpl implements WalletService {
   }
 
   /**
-   * 지갑 번호 생성
+   * 지갑 번호 생성 (예: 1234-5678-9012-3456)
    */
-  private String generateWalletNumber(Long userId, String currencyCode) {
-    int random = (int)(Math.random() * 90_000_000) + 10_000_000;
-    return String.format("%s-%d-%08d", currencyCode, userId, random);
+  private String generateWalletNumber() {
+    int part1 = (int)(Math.random() * 9000) + 1000;
+    int part2 = (int)(Math.random() * 9000) + 1000;
+    int part3 = (int)(Math.random() * 9000) + 1000;
+    int part4 = (int)(Math.random() * 9000) + 1000;
+
+    return String.format("%04d-%04d-%04d-%04d", part1, part2, part3, part4);
   }
 }
