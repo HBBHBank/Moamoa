@@ -228,23 +228,29 @@ public class SettlementGroupServiceImpl implements SettlementGroupService {
     SettlementGroup group = groupRepository.findById(groupId)
       .orElseThrow(() -> new BaseException(SettlementErrorCode.GROUP_NOT_FOUND));
 
-    // 2. 정산 상태가 COMPLETE인지 확인
+    // 2. 정산 거래 총액 조회
     BigDecimal totalAmount = settlementTransactionQueryRepository.sumByGroupSharePeriods(group);
 
-    // 3. 그룹의 멤버 수 조회
-    int memberCount = group.getMembers().size();
+    // 3. 전체 정산 멤버 수 (방장 포함)
+    int totalMemberCount = group.getMembers().size();
 
-    // 4. 방장 제외한 멤버 수로 나누기 (정산 금액 계산)
-    BigDecimal individualShare = totalAmount.divide(BigDecimal.valueOf(memberCount), RoundingMode.DOWN);
+    // 4. 1인당 정산 금액 (방장 제외 인원 기준으로 나눔)
+    int dividedMemberCount = (int) group.getMembers().stream()
+      .filter(member -> !member.getUser().equals(group.getHost()))
+      .count();
+
+    BigDecimal dividedAmount = totalAmount.divide(BigDecimal.valueOf(dividedMemberCount), RoundingMode.DOWN);
 
     // 5. 정산 거래 내역 조회
     return group.getMembers().stream()
       .filter(member -> !member.getUser().equals(group.getHost()))
       .map(member -> new SettlementTransactionResponseDto(
-        member.getUser().getId(),
-        group.getHost().getId(),
-        individualShare.longValue(),
-        member.isHasTransferred()
+        member.getUser().getId(),                // fromUserId
+        group.getHost().getId(),                 // toUserId
+        totalAmount,                             // 정산 총액
+        member.isHasTransferred(),               // 송금 여부
+        totalMemberCount,                        // 정산 인원 수
+        dividedAmount                            // 1인당 금액
       ))
       .toList();
   }
