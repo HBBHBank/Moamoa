@@ -30,6 +30,8 @@ public class HwanbeeAccountLink { // 유저와 환비 API 실 계좌 연결 정�
   @Column(name = "currency_code", nullable = false, length = 10)
   private String currencyCode;
 
+  // TODO: 계좌 연동 기간.
+
   @Builder
   public HwanbeeAccountLink(Long userId, String hwanbeeBankAccountNumber, String currencyCode) {
     this.userId = userId;

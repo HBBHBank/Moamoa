@@ -30,17 +30,26 @@ public class PointTransferServiceImpl implements PointTransferService {
     Wallet toWallet = walletRepository.findByWalletNumber(dto.toWalletNumber())
       .orElseThrow(() -> new BaseException(TransferErrorCode.WALLET_NOT_FOUND));
 
+    // 동일 사용자 지갑 간 송금 차단
+    if (fromWallet.getUser().getId().equals(toWallet.getUser().getId())) {
+      throw new BaseException(TransferErrorCode.CANNOT_TRANSFER_TO_SELF);
+    }
+
+    // 통화 코드가 다른 경우 차단
     if (!fromWallet.getCurrency().equals(toWallet.getCurrency())) {
       throw new BaseException(TransferErrorCode.CURRENCY_MISMATCH);
     }
 
+    // 잔액 부족 시 차단
     if (fromWallet.getBalance().compareTo(dto.amount()) < 0) {
       throw new BaseException(TransferErrorCode.INSUFFICIENT_BALANCE);
     }
 
+    // 금액 이동
     fromWallet.decreaseBalance(dto.amount());
     toWallet.increaseBalance(dto.amount());
 
+    // 거래 기록 저장
     InternalWalletTransaction transaction = InternalWalletTransaction.create(
       fromWallet,
       toWallet,
@@ -48,14 +57,13 @@ public class PointTransferServiceImpl implements PointTransferService {
       WalletTransactionStatus.SUCCESS,
       dto.amount()
     );
-
     walletTransactionRepository.save(transaction);
 
     return new PointTransferResponseDto(
-      toWallet.getUser().getName(),        // 받는 사람 이름
-      toWallet.getWalletNumber(),          // 받는 지갑 번호
-      dto.amount(),                        // 보낸 금액
-      toWallet.getCurrency().getName()     // 통화 코드
+      toWallet.getUser().getName(),
+      toWallet.getWalletNumber(),
+      dto.amount(),
+      toWallet.getCurrency().getName()
     );
   }
 }

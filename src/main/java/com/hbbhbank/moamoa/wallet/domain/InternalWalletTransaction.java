@@ -27,7 +27,7 @@ public class InternalWalletTransaction {
   private Wallet wallet; // 주체 지갑
 
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "counter_wallet_id", nullable = false)
+  @JoinColumn(name = "counter_wallet_id")
   private Wallet counterWallet; // 상대 지갑 (송금/결제 시)
 
   @Enumerated(EnumType.STRING)
