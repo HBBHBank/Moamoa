@@ -20,6 +20,7 @@ public enum WalletErrorCode implements ErrorCode {
   USER_ACCOUNT_LINK_NOT_MATCHED(HttpStatus.NOT_FOUND, "WALLET_011","사용자와 계좌 연결 정보가 일치하지 않습니다."),
   USER_ACCOUNT_LINK_CURRENCY_MISMATCH(HttpStatus.NOT_FOUND, "WALLET_012","사용자와 계좌 연결 정보의 통화가 일치하지 않습니다."),
   FAIL_VERIFICATION(HttpStatus.BAD_REQUEST, "WALLET_013", "인증에 실패했습니다."),
+  CURRENCY_MISMATCH(HttpStatus.BAD_REQUEST, "WALLET_014", "지갑의 통화와 요청된 통화가 일치하지 않습니다.")
   ;
 
   private final HttpStatus status;

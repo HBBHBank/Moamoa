@@ -3,6 +3,7 @@ package com.hbbhbank.moamoa.wallet.service;
 import com.hbbhbank.moamoa.external.dto.request.account.VerificationCodeRequestDto;
 import com.hbbhbank.moamoa.wallet.domain.Wallet;
 import com.hbbhbank.moamoa.wallet.dto.request.wallet.SearchWalletRequestDto;
+import com.hbbhbank.moamoa.wallet.dto.response.wallet.BankAccountResponseDto;
 import com.hbbhbank.moamoa.wallet.dto.response.wallet.CreateWalletResponseDto;
 import com.hbbhbank.moamoa.wallet.dto.response.wallet.SearchWalletResponseDto;
 
@@ -24,4 +25,10 @@ public interface WalletService {
 
   // 지갑 번호로 지갑 조회
   Wallet getWalletByNumberOrThrow(String WalletNumber);
+
+  // 환비 계좌 목록 조회
+  List<BankAccountResponseDto> getBankAccountsByUser(String currencyCode);
+
+  // 지갑 번호와 통화 코드로 지갑 조회 및 통화 검증
+  Wallet getWalletByNumberAndVerifyCurrency(String walletNumber, String currencyCode);
 }

@@ -26,27 +26,33 @@ public class WalletTransactionServiceImpl implements WalletTransactionService {
   private final ExternalWalletTransactionRepository externalRepo;
 
   @Override
-  public Page<TransactionResponseDto> findAll(TransactionFilterRequestDto filter) {
-
+  public Page<TransactionResponseDto> findAll(TransactionFilterRequestDto filter, Long userId) {
     BooleanBuilder internalCond = new BooleanBuilder();
-    if (filter.walletId() != null)
-      internalCond.and(internalWalletTransaction.wallet.id.eq(filter.walletId()));
-    if (filter.currencyCode() != null)
-      internalCond.and(internalWalletTransaction.wallet.currency.code.eq(filter.currencyCode()));
-    if (filter.type() != null)
-      internalCond.and(internalWalletTransaction.type.eq(filter.type()));
-    if (filter.startDate() != null && filter.endDate() != null)
-      internalCond.and(internalWalletTransaction.transactedAt.between(filter.startDate(), filter.endDate()));
-
     BooleanBuilder externalCond = new BooleanBuilder();
-    if (filter.walletId() != null)
+
+    // 사용자 본인의 지갑만 조회
+    internalCond.and(internalWalletTransaction.wallet.user.id.eq(userId));
+    externalCond.and(externalWalletTransaction.wallet.user.id.eq(userId));
+
+    if (filter.walletId() != null) {
+      internalCond.and(internalWalletTransaction.wallet.id.eq(filter.walletId()));
       externalCond.and(externalWalletTransaction.wallet.id.eq(filter.walletId()));
-    if (filter.currencyCode() != null)
+    }
+
+    if (filter.currencyCode() != null) {
+      internalCond.and(internalWalletTransaction.wallet.currency.code.eq(filter.currencyCode()));
       externalCond.and(externalWalletTransaction.wallet.currency.code.eq(filter.currencyCode()));
-    if (filter.type() != null)
+    }
+
+    if (filter.type() != null) {
+      internalCond.and(internalWalletTransaction.type.eq(filter.type()));
       externalCond.and(externalWalletTransaction.type.eq(filter.type()));
-    if (filter.startDate() != null && filter.endDate() != null)
+    }
+
+    if (filter.startDate() != null && filter.endDate() != null) {
+      internalCond.and(internalWalletTransaction.transactedAt.between(filter.startDate(), filter.endDate()));
       externalCond.and(externalWalletTransaction.transactedAt.between(filter.startDate(), filter.endDate()));
+    }
 
     List<TransactionResponseDto> internals = internalRepo.findAllByPredicate(internalCond).stream()
       .map(tx -> new TransactionResponseDto(
@@ -87,12 +93,17 @@ public class WalletTransactionServiceImpl implements WalletTransactionService {
   }
 
   @Override
-  public TransactionResponseDto findLatest() {
-    InternalWalletTransaction internal = internalRepo.findAllByPredicate(new BooleanBuilder()).stream()
+  public TransactionResponseDto findLatest(Long userId) {
+    BooleanBuilder internalCond = new BooleanBuilder()
+      .and(internalWalletTransaction.wallet.user.id.eq(userId));
+    BooleanBuilder externalCond = new BooleanBuilder()
+      .and(externalWalletTransaction.wallet.user.id.eq(userId));
+
+    InternalWalletTransaction internal = internalRepo.findAllByPredicate(internalCond).stream()
       .max(Comparator.comparing(InternalWalletTransaction::getTransactedAt))
       .orElse(null);
 
-    ExternalWalletTransaction external = externalRepo.findAllByPredicate(new BooleanBuilder()).stream()
+    ExternalWalletTransaction external = externalRepo.findAllByPredicate(externalCond).stream()
       .max(Comparator.comparing(ExternalWalletTransaction::getTransactedAt))
       .orElse(null);
 

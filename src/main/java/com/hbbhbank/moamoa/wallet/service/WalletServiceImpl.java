@@ -17,6 +17,7 @@ import com.hbbhbank.moamoa.wallet.domain.Currency;
 import com.hbbhbank.moamoa.wallet.domain.HwanbeeAccountLink;
 import com.hbbhbank.moamoa.wallet.domain.Wallet;
 import com.hbbhbank.moamoa.wallet.dto.request.wallet.SearchWalletRequestDto;
+import com.hbbhbank.moamoa.wallet.dto.response.wallet.BankAccountResponseDto;
 import com.hbbhbank.moamoa.wallet.dto.response.wallet.CreateWalletResponseDto;
 import com.hbbhbank.moamoa.wallet.dto.response.wallet.SearchWalletResponseDto;
 import com.hbbhbank.moamoa.wallet.exception.WalletErrorCode;
@@ -90,11 +91,11 @@ public class WalletServiceImpl implements WalletService {
       throw new BaseException(WalletErrorCode.FAIL_VERIFICATION);
     }
 
-    // 통화 및 사용자 정보 조회
+    // 사용자 및 통화 정보 조회
     User user = userService.getByIdOrThrow(userId);
     Currency currency = currencyService.getByCodeOrThrow(data.currencyCode());
 
-    // 환비 계좌 저장 (중복 체크)
+    // 중복된 환비 계좌가 없을 경우 새로 저장
     HwanbeeAccountLink accountLink = hwanbeeLinkRepository
       .findByUserIdAndHwanbeeBankAccountNumber(userId, data.accountNumber())
       .orElseGet(() -> {
@@ -106,18 +107,23 @@ public class WalletServiceImpl implements WalletService {
         return hwanbeeLinkRepository.save(link);
       });
 
-    // 중복 지갑 확인
+    // 이미 동일 통화 지갑이 있으면 예외
     if (walletRepository.existsByUserIdAndCurrencyCode(userId, data.currencyCode())) {
       throw new BaseException(WalletErrorCode.DUPLICATE_WALLET);
     }
 
-    // 지갑 번호 생성 및 지갑 생성
+    // 지갑 생성 및 연관관계 설정
     String walletNumber = generateWalletNumber();
     Wallet wallet = Wallet.create(user, walletNumber, currency, accountLink);
+
+    // 양방향 연관관계 설정
+    user.addWallet(wallet); // ★ 중요: user → wallet 연결
+    // 저장
     walletRepository.save(wallet);
 
     return CreateWalletResponseDto.from(data.accountNumber());
   }
+
 
 
   /**
@@ -153,6 +159,44 @@ public class WalletServiceImpl implements WalletService {
   public Wallet getWalletByNumberOrThrow(String walletNumber) {
     return walletRepository.findByWalletNumber(walletNumber)
       .orElseThrow(() -> BaseException.type(WalletErrorCode.NOT_FOUND_WALLET));
+  }
+
+  /**
+   * 현재 로그인한 사용자의 환비 계좌(은행 계좌) 목록을 조회
+   * currencyCode가 null이 아니면 해당 통화만 필터링
+   */
+  public List<BankAccountResponseDto> getBankAccountsByUser(String currencyCode) {
+
+    // 현재 로그인한 사용자의 ID를 조회합니다.
+    Long userId = userService.getCurrentUserId();
+
+    List<HwanbeeAccountLink> links;
+
+    // 통화 코드가 null이 아니고 공백이 아닌 경우 (즉, 특정 통화로 필터링하는 경우)
+    if (currencyCode != null && !currencyCode.isBlank()) {
+      // 해당 사용자 ID와 통화 코드로 환비 계좌를 조회합니다.
+      links = hwanbeeLinkRepository.findByUserIdAndCurrencyCode(userId, currencyCode);
+    } else {
+      // 통화 코드가 없거나 공백일 경우, 해당 사용자의 전체 환비 계좌를 조회합니다.
+      links = hwanbeeLinkRepository.findByUserId(userId);
+    }
+
+    // 조회한 계좌 엔티티들을 DTO로 변환하여 반환합니다.
+    return links.stream()
+      .map(BankAccountResponseDto::from)  // 각 엔티티를 BankAccountResponseDto로 변환
+      .collect(Collectors.toList());      // 리스트로 수집하여 반환
+  }
+
+  @Override
+  public Wallet getWalletByNumberAndVerifyCurrency(String walletNumber, String currencyCode) {
+    Wallet wallet = walletRepository.findByWalletNumber(walletNumber)
+      .orElseThrow(() -> new BaseException(WalletErrorCode.NOT_FOUND_WALLET));
+
+    if (!wallet.getCurrency().getCode().equals(currencyCode)) {
+      throw new BaseException(WalletErrorCode.CURRENCY_MISMATCH);
+    }
+
+    return wallet;
   }
 
   /**

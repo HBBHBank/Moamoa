@@ -2,8 +2,10 @@ package com.hbbhbank.moamoa.wallet.controller;
 
 import com.hbbhbank.moamoa.external.dto.request.account.VerificationCodeRequestDto;
 import com.hbbhbank.moamoa.global.common.BaseResponse;
+import com.hbbhbank.moamoa.wallet.domain.Wallet;
 import com.hbbhbank.moamoa.wallet.dto.request.wallet.CreateWalletRequestDto;
 import com.hbbhbank.moamoa.wallet.dto.request.wallet.SearchWalletRequestDto;
+import com.hbbhbank.moamoa.wallet.dto.response.wallet.BankAccountResponseDto;
 import com.hbbhbank.moamoa.wallet.dto.response.wallet.CreateWalletResponseDto;
 import com.hbbhbank.moamoa.wallet.dto.response.wallet.SearchWalletResponseDto;
 import com.hbbhbank.moamoa.wallet.service.WalletServiceImpl;
@@ -81,6 +83,33 @@ public class WalletController {
     return ResponseEntity.ok(BaseResponse.success(
       walletService.getAllWalletsByUser())
     );
+  }
+
+  /**
+   * 현재 로그인한 사용자의 환비 계좌를 통화 코드를 통해 조회합니다.
+   * @param currencyCode
+   * @return
+   */
+  @GetMapping("/bank-accounts")
+  public ResponseEntity<BaseResponse<List<BankAccountResponseDto>>> getBankAccounts(
+    @RequestParam(required = false) String currencyCode
+  ) {
+    List<BankAccountResponseDto> accounts = walletService.getBankAccountsByUser(currencyCode);
+    return ResponseEntity.ok(BaseResponse.success(accounts));
+  }
+
+  /**
+   * 해당 통화 코드의 모든 지갑을 사용자 상관 없이 존재
+   * @param currencyCode
+   * @return
+   */
+  @GetMapping("/search")
+  public ResponseEntity<BaseResponse<SearchWalletResponseDto>> getWalletByCurrencyAndNumber(
+    @RequestParam String walletNumber,
+    @RequestParam String currencyCode
+  ) {
+    Wallet wallet = walletService.getWalletByNumberAndVerifyCurrency(walletNumber, currencyCode);
+    return ResponseEntity.ok(BaseResponse.success(SearchWalletResponseDto.from(wallet)));
   }
 
 }

@@ -1,9 +1,11 @@
 package com.hbbhbank.moamoa.wallet.controller;
 
 import com.hbbhbank.moamoa.global.common.BaseResponse;
+import com.hbbhbank.moamoa.user.service.UserService;
 import com.hbbhbank.moamoa.wallet.dto.request.transaction.TransactionFilterRequestDto;
 import com.hbbhbank.moamoa.wallet.dto.response.transaction.TransactionResponseDto;
 import com.hbbhbank.moamoa.wallet.service.WalletTransactionService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
@@ -17,19 +19,19 @@ import org.springframework.web.bind.annotation.RestController;
 public class WalletTransactionController {
 
   private final WalletTransactionService walletTransactionService;
+  private final UserService userService;
 
   @GetMapping
   public ResponseEntity<BaseResponse<Page<TransactionResponseDto>>> getAllTransactions(
-    TransactionFilterRequestDto req) {
-    return ResponseEntity.ok(BaseResponse.success(
-      walletTransactionService.findAll(req))
-    );
+    @Valid TransactionFilterRequestDto req
+  ) {
+    Long userId = userService.getCurrentUserId(); // 로그인 사용자 ID
+    return ResponseEntity.ok(BaseResponse.success(walletTransactionService.findAll(req, userId)));
   }
 
   @GetMapping("/latest")
   public ResponseEntity<BaseResponse<TransactionResponseDto>> getLatestTransaction() {
-    return ResponseEntity.ok(BaseResponse.success(
-      walletTransactionService.findLatest())
-    );
+    Long userId = userService.getCurrentUserId();
+    return ResponseEntity.ok(BaseResponse.success(walletTransactionService.findLatest(userId)));
   }
 }

@@ -7,9 +7,9 @@ import org.springframework.data.domain.Page;
 public interface WalletTransactionService {
 
   // 전체 거래내역 (필터 포함)
-  Page<TransactionResponseDto> findAll(TransactionFilterRequestDto filter);
+  Page<TransactionResponseDto> findAll(TransactionFilterRequestDto filter, Long userId);
 
   // 가장 최근 거래 1건
-  TransactionResponseDto findLatest();
+  TransactionResponseDto findLatest(Long userId);
 }
 
