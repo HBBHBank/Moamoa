@@ -124,4 +124,8 @@ public class User {
   public void removeWallet(Wallet wallet) {
     this.wallets.remove(wallet);
   }
+
+  public void updateProfileImage(ProfileImage newImage) {
+    this.profileImage = newImage;
+  }
 }

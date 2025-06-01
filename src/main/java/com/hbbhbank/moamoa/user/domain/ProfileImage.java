@@ -9,20 +9,24 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public enum ProfileImage {
-  IMAGE1("IMAGE_1", "img_1"),
-  IMAGE2("IMAGE_2", "img_2"),
-  IMAGE3("IMAGE_3", "img_3"),
-  IMAGE4("IMAGE_4", "img_4");
+  IMAGE1("IMAGE1", "img_1"),
+  IMAGE2("IMAGE2", "img_2"),
+  IMAGE3("IMAGE3", "img_3"),
+  IMAGE4("IMAGE4", "img_4");
 
-  private final String key;
-  private final String value;
+  private final String key;   // DB 저장 값
+  private final String value; // 프론트에 전달할 값
 
-  // 프론트에서 전달받은 프로필 이미지 값으로 enum을 찾는 메서드
+  public static ProfileImage fromKey(String key) {
+    for (ProfileImage image : values()) {
+      if (image.getKey().equals(key)) return image;
+    }
+    throw BaseException.type(UserErrorCode.NOT_FOUND_PROFILE_IMAGE);
+  }
+
   public static ProfileImage from(String value) {
-    for (ProfileImage profileImage : ProfileImage.values()) {
-      if (profileImage.getValue().equals(value)) {
-        return profileImage;
-      }
+    for (ProfileImage image : values()) {
+      if (image.getValue().equals(value)) return image;
     }
     throw BaseException.type(UserErrorCode.NOT_FOUND_PROFILE_IMAGE);
   }
