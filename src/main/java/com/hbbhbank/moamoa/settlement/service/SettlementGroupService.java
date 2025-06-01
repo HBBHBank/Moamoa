@@ -4,10 +4,7 @@ import com.hbbhbank.moamoa.global.exception.BaseException;
 import com.hbbhbank.moamoa.settlement.domain.*;
 import com.hbbhbank.moamoa.settlement.dto.request.CreateSettlementGroupRequestDto;
 import com.hbbhbank.moamoa.settlement.dto.request.VerifyJoinCodeRequestDto;
-import com.hbbhbank.moamoa.settlement.dto.response.CreateSettlementGroupResponseDto;
-import com.hbbhbank.moamoa.settlement.dto.response.ReissueJoinCodeResponseDto;
-import com.hbbhbank.moamoa.settlement.dto.response.SettlementTransactionResponseDto;
-import com.hbbhbank.moamoa.settlement.dto.response.VerifyJoinCodeResponseDto;
+import com.hbbhbank.moamoa.settlement.dto.response.*;
 import com.hbbhbank.moamoa.settlement.exception.SettlementErrorCode;
 import com.hbbhbank.moamoa.settlement.repository.SettlementGroupRepository;
 import com.hbbhbank.moamoa.settlement.repository.SettlementSharePeriodRepository;
@@ -109,4 +106,12 @@ public interface SettlementGroupService {
    * 정산 그룹 비활성화 (공유 종료)
    */
   void deactivateGroup(Long groupId);
+
+  List<SettlementGroupResponseDto> getMyGroups(Long userId);
+
+  List<SettlementGroupResponseDto> getJoinedGroups(Long userId);
+
+  SettlementGroupResponseDto getGroupDetail(Long groupId, Long userId, boolean allowIfJoinCodeValid);
+
+  int getMemberCount(Long groupId);
 }

@@ -20,6 +20,9 @@ public enum SettlementErrorCode implements ErrorCode {
   ALREADY_INACTIVE(HttpStatus.CONFLICT, "SETTLEMENT_010", "이미 비활성화된 정산 그룹입니다."),
   ALREADY_ACTIVE(HttpStatus.CONFLICT, "SETTLEMENT_011", "이미 활성화된 정산 그룹입니다."),
   ACTIVE_SHARE_PERIOD_EXISTS(HttpStatus.CONFLICT, "SETTLEMENT_012", "활성화된 공유 기간이 존재합니다."),
+  NO_ACCESS_TO_GROUP(HttpStatus.FORBIDDEN, "SETTLEMENT_013", "해당 정산 그룹에 접근할 수 없습니다."),
+  SETTLEMENT_IN_PROGRESS(HttpStatus.CONFLICT, "SETTLEMENT_014", "정산이 진행 중입니다. 다른 작업을 수행할 수 없습니다"),
+  MEMBER_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "SETTLEMENT_015", "정산 그룹의 최대 참여 인원 수를 초과했습니다."),
   ;
 
   private final HttpStatus status;

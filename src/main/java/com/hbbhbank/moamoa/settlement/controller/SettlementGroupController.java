@@ -3,10 +3,7 @@ package com.hbbhbank.moamoa.settlement.controller;
 import com.hbbhbank.moamoa.global.common.BaseResponse;
 import com.hbbhbank.moamoa.settlement.dto.request.CreateSettlementGroupRequestDto;
 import com.hbbhbank.moamoa.settlement.dto.request.VerifyJoinCodeRequestDto;
-import com.hbbhbank.moamoa.settlement.dto.response.CreateSettlementGroupResponseDto;
-import com.hbbhbank.moamoa.settlement.dto.response.ReissueJoinCodeResponseDto;
-import com.hbbhbank.moamoa.settlement.dto.response.SettlementTransactionResponseDto;
-import com.hbbhbank.moamoa.settlement.dto.response.VerifyJoinCodeResponseDto;
+import com.hbbhbank.moamoa.settlement.dto.response.*;
 import com.hbbhbank.moamoa.settlement.service.SettlementGroupService;
 import com.hbbhbank.moamoa.transfer.dto.request.PointTransferRequestDto;
 import com.hbbhbank.moamoa.wallet.dto.response.transaction.TransactionResponseDto;
@@ -99,9 +96,9 @@ public class SettlementGroupController {
   }
 
   /**
-   * 그룹 삭제 (정산 완료 상태 + 모두 송금 완료일 때만 가능)
+   * 그룹 삭제
    */
-  @DeleteMapping("/{groupId}")
+  @PostMapping("/{groupId}")
   public ResponseEntity<BaseResponse<Void>> deleteGroup(@PathVariable Long groupId) {
     settlementGroupService.deleteGroup(groupId);
     return ResponseEntity.ok(BaseResponse.success(null));
@@ -136,4 +133,59 @@ public class SettlementGroupController {
     settlementGroupService.activateGroup(groupId);
     return ResponseEntity.ok(BaseResponse.success(null));
   }
+
+  /**
+   * 현재 로그인한 사용자가 '방장'으로 등록된 정산 그룹 목록을 조회하는 API
+   */
+  @GetMapping("/my")
+  public ResponseEntity<BaseResponse<List<SettlementGroupResponseDto>>> getMyGroups() {
+    Long userId = userService.getCurrentUserId();
+    List<SettlementGroupResponseDto> groups = settlementGroupService.getMyGroups(userId);
+    return ResponseEntity.ok(BaseResponse.success(groups));
+  }
+
+  /**
+   * 현재 로그인한 사용자가 '참여자'로 가입된 정산 그룹 목록을 조회하는 API
+   */
+  @GetMapping("/joined")
+  public ResponseEntity<BaseResponse<List<SettlementGroupResponseDto>>> getJoinedGroups() {
+    Long userId = userService.getCurrentUserId();
+    List<SettlementGroupResponseDto> groups = settlementGroupService.getJoinedGroups(userId);
+    return ResponseEntity.ok(BaseResponse.success(groups));
+  }
+
+  /**
+   * 정산 그룹 상세 조회
+   */
+  @GetMapping("/{groupId}")
+  public ResponseEntity<BaseResponse<SettlementGroupResponseDto>> getGroupDetail(
+    @PathVariable Long groupId,
+    @RequestParam(required = false, defaultValue = "false") boolean allowIfJoinCodeValid) {
+
+    Long userId = userService.getCurrentUserId();
+    return ResponseEntity.ok(BaseResponse.success(
+      settlementGroupService.getGroupDetail(groupId, userId, allowIfJoinCodeValid)
+    ));
+  }
+
+  /**
+   * 멤버가 그룹 나가기
+   */
+  @PostMapping("/{groupId}/leave")
+  public ResponseEntity<BaseResponse<Void>> leaveGroup(@PathVariable Long groupId) {
+    settlementGroupService.leaveGroup(groupId);
+    return ResponseEntity.ok(BaseResponse.success(null));
+  }
+
+  /**
+   * 정산 그룹 멤버 수 조회
+   */
+  @GetMapping("/{groupId}/member-count")
+  public ResponseEntity<BaseResponse<Integer>> getMemberCount(@PathVariable Long groupId) {
+    return ResponseEntity.ok(BaseResponse.success(
+      settlementGroupService.getMemberCount(groupId)
+    ));
+  }
+
+
 }

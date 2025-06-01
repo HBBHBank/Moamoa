@@ -4,15 +4,9 @@ import com.hbbhbank.moamoa.global.exception.BaseException;
 import com.hbbhbank.moamoa.settlement.domain.*;
 import com.hbbhbank.moamoa.settlement.dto.request.CreateSettlementGroupRequestDto;
 import com.hbbhbank.moamoa.settlement.dto.request.VerifyJoinCodeRequestDto;
-import com.hbbhbank.moamoa.settlement.dto.response.CreateSettlementGroupResponseDto;
-import com.hbbhbank.moamoa.settlement.dto.response.ReissueJoinCodeResponseDto;
-import com.hbbhbank.moamoa.settlement.dto.response.SettlementTransactionResponseDto;
-import com.hbbhbank.moamoa.settlement.dto.response.VerifyJoinCodeResponseDto;
+import com.hbbhbank.moamoa.settlement.dto.response.*;
 import com.hbbhbank.moamoa.settlement.exception.SettlementErrorCode;
-import com.hbbhbank.moamoa.settlement.repository.SettlementGroupRepository;
-import com.hbbhbank.moamoa.settlement.repository.SettlementSharePeriodRepository;
-import com.hbbhbank.moamoa.settlement.repository.SettlementTransactionQueryRepository;
-import com.hbbhbank.moamoa.settlement.repository.SettlementTransactionRepository;
+import com.hbbhbank.moamoa.settlement.repository.*;
 import com.hbbhbank.moamoa.transfer.dto.request.PointTransferRequestDto;
 import com.hbbhbank.moamoa.user.domain.User;
 import com.hbbhbank.moamoa.user.service.UserService;
@@ -32,7 +26,9 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -46,7 +42,7 @@ public class SettlementGroupServiceImpl implements SettlementGroupService {
   private final InternalWalletTransactionRepository internalWalletTransactionRepository;
   private final SettlementTransactionQueryRepository settlementTransactionQueryRepository;
   private final SettlementSharePeriodRepository sharePeriodRepository;
-
+  private final SettlementMemberRepository memberRepository;
 
   /**
    * 정산 그룹 생성
@@ -87,9 +83,6 @@ public class SettlementGroupServiceImpl implements SettlementGroupService {
     );
   }
 
-  /**
-   * 초대 코드 검증
-   */
   @Override
   @Transactional
   public VerifyJoinCodeResponseDto verifyJoinCode(VerifyJoinCodeRequestDto request) {
@@ -103,8 +96,26 @@ public class SettlementGroupServiceImpl implements SettlementGroupService {
     // 3. 초대 코드 만료 여부 확인
     boolean valid = group.isJoinCodeValid() && group.getJoinAttemptCount() <= 5;
 
+    // 4. 유효한 경우 → 현재 로그인한 사용자를 그룹에 멤버로 등록 (중복 방지)
+    if (valid) {
+      User currentUser = userService.getCurrentUser();
+
+      boolean alreadyJoined = group.getMembers().stream()
+        .anyMatch(m -> m.getUser().getId().equals(currentUser.getId()));
+
+      if (!alreadyJoined) {
+        SettlementMember newMember = SettlementMember.builder()
+          .user(currentUser)
+          .group(group)
+          .build();
+        group.getMembers().add(newMember); // 연관관계 편의 메서드로도 가능
+        memberRepository.save(newMember);
+      }
+    }
+
     return new VerifyJoinCodeResponseDto(group.getId(), group.getGroupName(), valid);
   }
+
 
   /**
    * 방장 -> 초대 코드 만료 시 재발급
@@ -319,6 +330,9 @@ public class SettlementGroupServiceImpl implements SettlementGroupService {
 
   /**
    * 그룹 폭파하기
+   * - 정산 진행 중(IN_PROGRESS)인 경우에는 삭제 불가
+   * - BEFORE 또는 COMPLETE 상태일 때만 삭제 가능
+   * - COMPLETE 상태일 경우, 모든 멤버가 송금 완료했는지 검증
    */
   @Override
   @Transactional
@@ -327,24 +341,28 @@ public class SettlementGroupServiceImpl implements SettlementGroupService {
     SettlementGroup group = groupRepository.findById(groupId)
       .orElseThrow(() -> new BaseException(SettlementErrorCode.GROUP_NOT_FOUND));
 
-    // 2. 정산 상태가 COMPLETE인지 확인 (도메인 명확성)
-    if (group.getSettlementStatus() != SettlementStatus.COMPLETE) {
-      throw new BaseException(SettlementErrorCode.SETTLEMENT_NOT_COMPLETE);
+    // 2. 정산이 진행 중이라면 삭제 불가
+    if (group.getSettlementStatus() == SettlementStatus.IN_PROGRESS) {
+      throw new BaseException(SettlementErrorCode.SETTLEMENT_IN_PROGRESS);
     }
 
-    // 3. 모든 멤버가 송금 완료했는지 확인
-    boolean allSettled = group.getMembers().stream().allMatch(SettlementMember::isHasTransferred);
-    if (!allSettled) {
-      throw new BaseException(SettlementErrorCode.SETTLEMENT_NOT_COMPLETE);
+    // 3. COMPLETE 상태인 경우 모든 멤버의 송금 완료 여부 확인
+    if (group.getSettlementStatus() == SettlementStatus.COMPLETE) {
+      boolean allSettled = group.getMembers().stream()
+        .allMatch(SettlementMember::isHasTransferred);
+
+      if (!allSettled) {
+        throw new BaseException(SettlementErrorCode.SETTLEMENT_NOT_COMPLETE);
+      }
     }
 
-    // 4. 그룹 삭제 (cascade로 자식까지 함께 삭제됨을 보장)
+    // 4. 그룹 삭제 (cascade 옵션을 통해 자식 엔티티도 삭제됨)
     groupRepository.delete(group);
   }
 
   /**
    * 멤버가 그룹 나가기
-   * - 정산 완료 전까지는 나갈 수 없음
+   * - 정산이 진행 중(IN_PROGRESS)인 경우에는 나갈 수 없음
    */
   @Override
   @Transactional
@@ -356,9 +374,9 @@ public class SettlementGroupServiceImpl implements SettlementGroupService {
     SettlementGroup group = groupRepository.findById(groupId)
       .orElseThrow(() -> new BaseException(SettlementErrorCode.GROUP_NOT_FOUND));
 
-    // 3. 정산 완료 전이면 나갈 수 없음
-    if (group.getSettlementStatus() != SettlementStatus.COMPLETE) {
-      throw new BaseException(SettlementErrorCode.SETTLEMENT_NOT_COMPLETE);
+    // 3. 정산 상태가 진행 중이면 나갈 수 없음
+    if (group.getSettlementStatus() == SettlementStatus.IN_PROGRESS) {
+      throw new BaseException(SettlementErrorCode.SETTLEMENT_IN_PROGRESS);
     }
 
     // 4. 현재 유저가 그룹의 멤버인지 확인
@@ -370,6 +388,7 @@ public class SettlementGroupServiceImpl implements SettlementGroupService {
     // 5. 해당 멤버를 그룹에서 제거
     group.getMembers().remove(target);
   }
+
 
   /**
    * 방장의 공유 지갑의 거래 내역 공유
@@ -454,4 +473,60 @@ public class SettlementGroupServiceImpl implements SettlementGroupService {
     SettlementSharePeriod newPeriod = SettlementSharePeriod.start(group, LocalDateTime.now());
     sharePeriodRepository.save(newPeriod);
   }
+
+  /**
+   * 현재 로그인한 사용자가 방장으로 등록된 정산 그룹 목록 조회
+   */
+  @Override
+  public List<SettlementGroupResponseDto> getMyGroups(Long userId) {
+    // 방장이 나인 정산 그룹을 DB에서 조회
+    return groupRepository.findByHostId(userId).stream()
+      // 각 그룹 엔티티를 DTO로 변환 (isOwner: true 포함)
+      .map(group -> SettlementGroupResponseDto.from(group, userId))
+      .collect(Collectors.toList());
+  }
+
+  /**
+   * 현재 로그인한 사용자가 참여자로 등록된 정산 그룹 목록 조회
+   */
+  @Override
+  public List<SettlementGroupResponseDto> getJoinedGroups(Long userId) {
+    return memberRepository.findAllByUserId(userId).stream()
+      // SettlementMember → 그룹 가져오기
+      .map(SettlementMember::getGroup)
+      // null 값 제거 (예: 잘못된 member 참조 등)
+      .filter(Objects::nonNull)
+      // 중복 제거
+      .distinct()
+      // DTO 변환
+      .map(group -> SettlementGroupResponseDto.from(group, userId))
+      .collect(Collectors.toList());
+  }
+
+  @Override
+  @Transactional
+  public SettlementGroupResponseDto getGroupDetail(Long groupId, Long userId, boolean allowIfJoinCodeValid) {
+    SettlementGroup group = groupRepository.findById(groupId)
+      .orElseThrow(() -> new BaseException(SettlementErrorCode.GROUP_NOT_FOUND));
+
+    boolean isHost = group.getHost().getId().equals(userId);
+    boolean isMember = group.hasMember(userId);
+
+    // 멤버가 아닌데 허용 플래그도 false이면 접근 불가
+    if (!isHost && !isMember && !allowIfJoinCodeValid) {
+      throw new BaseException(SettlementErrorCode.NO_ACCESS_TO_GROUP);
+    }
+
+    return SettlementGroupResponseDto.from(group, userId);
+  }
+
+  @Override
+  @Transactional(readOnly = true)
+  public int getMemberCount(Long groupId) {
+    SettlementGroup group = groupRepository.findById(groupId)
+      .orElseThrow(() -> new BaseException(SettlementErrorCode.GROUP_NOT_FOUND));
+
+    return group.getMembers().size();
+  }
+
 }

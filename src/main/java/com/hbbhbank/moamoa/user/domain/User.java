@@ -3,6 +3,7 @@ package com.hbbhbank.moamoa.user.domain;
 import com.hbbhbank.moamoa.global.exception.BaseException;
 import com.hbbhbank.moamoa.user.dto.request.SignUpRequestDto;
 import com.hbbhbank.moamoa.user.exception.UserErrorCode;
+import com.hbbhbank.moamoa.wallet.domain.Wallet;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -12,6 +13,8 @@ import org.hibernate.annotations.DynamicUpdate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @Entity
@@ -55,6 +58,10 @@ public class User {
 
   @Column(name = "hwanbee_token_expire_at")
   private LocalDateTime hwanbeeTokenExpireAt;
+
+  @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+  private List<Wallet> wallets = new ArrayList<>();
+
 
   @Builder
   public User(String name, String email, String phoneNumber, String password, ProfileImage profileImage, TermsAgreement terms, ERole role) {
@@ -106,5 +113,15 @@ public class User {
     this.hwanbeeAccessToken = accessToken;
     this.hwanbeeRefreshToken = refreshToken;
     this.hwanbeeTokenExpireAt = LocalDateTime.now().plusSeconds(expiresInSeconds);
+  }
+
+  // 지갑 리스트에 추가
+  public void addWallet(Wallet wallet) {
+    this.wallets.add(wallet);
+  }
+
+  // 지갑 리스트 삭제
+  public void removeWallet(Wallet wallet) {
+    this.wallets.remove(wallet);
   }
 }
