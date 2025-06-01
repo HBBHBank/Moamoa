@@ -23,10 +23,11 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
-public class PaymentServiceImpl implements PaymentService{
+public class PaymentServiceImpl implements PaymentService {
 
   private final QrImageRepository qrImageRepository;
   private final WalletRepository walletRepository;
@@ -35,31 +36,33 @@ public class PaymentServiceImpl implements PaymentService{
   @Override
   @Transactional
   public QrCodeCreateResponseDto generateQr(Long walletId) {
-    // 1. 링크 생성
-    String qrLink = "http://localhost:8080/api/v1/payments/use?walletId=" + walletId;
+    // 1. 지갑 조회
+    Wallet wallet = walletRepository.findById(walletId)
+      .orElseThrow(() -> new BaseException(WalletErrorCode.NOT_FOUND_WALLET));
 
-    // 2. QR 이미지 생성
+    // 2. uuid 및 링크 생성
+    String uuid = UUID.randomUUID().toString();
+    String qrLink = "http://localhost:8080/api/v1/payments/use/" + uuid;
+
+    // 3. QR 이미지 생성
     byte[] imageBytes = QRCodeUtil.generateQRCodeImage(qrLink);
 
-    // 3. DB에 저장
+    // 4. DB 저장
     QrImage savedQrImage = qrImageRepository.save(
       QrImage.builder()
+        .uuid(uuid)
         .qrImage(imageBytes)
+        .wallet(wallet)
         .build()
     );
 
-    // 4. URL 생성
-    String imageUrl = QRCodeUtil.getQrImageURL(savedQrImage);
-
-    // 5. 응답 반환
-    return new QrCodeCreateResponseDto(savedQrImage.getId(), imageUrl);
+    // 5. 응답
+    return new QrCodeCreateResponseDto(savedQrImage.getId(), qrLink);
   }
-
 
   @Override
   @Transactional
   public void payWithQr(Long buyerUserId, String uuid, PaymentRequestDto req) {
-
     QrImage qrImage = qrImageRepository.findByUuid(uuid)
       .orElseThrow(() -> new BaseException(PaymentErrorCode.FAILED_CREATE_QR));
 
@@ -70,7 +73,6 @@ public class PaymentServiceImpl implements PaymentService{
     req.validate();
 
     Wallet sellerWallet = qrImage.getWallet();
-
     Wallet buyerWallet = walletRepository.findByUserIdAndCurrencyCode(buyerUserId, req.currencyCode())
       .orElseThrow(() -> new BaseException(WalletErrorCode.NOT_FOUND_WALLET));
 
@@ -82,10 +84,8 @@ public class PaymentServiceImpl implements PaymentService{
 
     buyerWallet.decreaseBalance(amount);
     sellerWallet.increaseBalance(amount);
-
     walletRepository.saveAll(List.of(buyerWallet, sellerWallet));
 
-    // 거래 기록
     internalWalletTransactionRepository.save(
       InternalWalletTransaction.create(
         buyerWallet, sellerWallet, WalletTransactionType.QR_PAYMENT, WalletTransactionStatus.SUCCESS, amount.negate()
@@ -98,7 +98,6 @@ public class PaymentServiceImpl implements PaymentService{
     );
   }
 
-  // QR 코드 이미지 반환
   @Override
   @Transactional(readOnly = true)
   public byte[] getQRCodeImage(Long qrId) {
@@ -110,10 +109,9 @@ public class PaymentServiceImpl implements PaymentService{
   @Override
   @Transactional
   public QrCodeCreateResponseDto reissueQr(Long walletId) {
-    return generateQr(walletId); // 단순히 새로 발급
+    return generateQr(walletId);
   }
 
-  // QR 스캔 후 판매자 정보 조회 (이름)
   @Override
   @Transactional(readOnly = true)
   public QrCodeInfoResponseDto getQrInfo(String uuid) {

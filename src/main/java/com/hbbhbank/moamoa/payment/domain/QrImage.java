@@ -40,7 +40,14 @@ public class QrImage {
 
   @PrePersist
   public void prePersist() {
-    this.createdAt = LocalDateTime.now();
-    this.expiresAt = this.createdAt.plusMinutes(10); // 10분 유효
+    if (this.createdAt == null) {
+      this.createdAt = LocalDateTime.now();
+    }
+    if (this.expiresAt == null) {
+      this.expiresAt = this.createdAt.plusMinutes(10); // 10분 유효
+    }
+    if (this.uuid == null) {
+      this.uuid = java.util.UUID.randomUUID().toString();
+    }
   }
 }
