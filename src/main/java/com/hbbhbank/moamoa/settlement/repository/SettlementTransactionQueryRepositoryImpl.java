@@ -1,9 +1,8 @@
 package com.hbbhbank.moamoa.settlement.repository;
 
-import com.hbbhbank.moamoa.settlement.domain.QSettlementSharePeriod;
 import com.hbbhbank.moamoa.settlement.domain.SettlementGroup;
 import com.hbbhbank.moamoa.settlement.domain.SettlementSharePeriod;
-import com.hbbhbank.moamoa.wallet.domain.QExternalWalletTransaction;
+import com.hbbhbank.moamoa.wallet.domain.InternalWalletTransaction;
 import com.hbbhbank.moamoa.wallet.domain.QInternalWalletTransaction;
 import com.hbbhbank.moamoa.wallet.domain.Wallet;
 import com.hbbhbank.moamoa.wallet.domain.WalletTransactionType;
@@ -18,8 +17,6 @@ import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 
-import static com.hbbhbank.moamoa.wallet.domain.QInternalWalletTransaction.internalWalletTransaction;
-
 @Repository
 @RequiredArgsConstructor
 public class SettlementTransactionQueryRepositoryImpl implements SettlementTransactionQueryRepository {
@@ -30,63 +27,51 @@ public class SettlementTransactionQueryRepositoryImpl implements SettlementTrans
 
   @Override
   public BigDecimal sumByGroupSharePeriods(SettlementGroup group) {
-    QInternalWalletTransaction internalTx = internalWalletTransaction;
-    QExternalWalletTransaction externalTx = QExternalWalletTransaction.externalWalletTransaction;
-    QSettlementSharePeriod period = QSettlementSharePeriod.settlementSharePeriod;
+    List<SettlementSharePeriod> periods = sharePeriodRepository.findAllByGroup(group);
+    Wallet wallet = group.getReferencedWallet();
 
-    List<SettlementSharePeriod> periods = queryFactory
-      .selectFrom(period)
-      .where(period.group.eq(group))
+    // 공유 지갑에서 발생한 출금 거래만 필터링
+    List<InternalWalletTransaction> outgoingTx = findSharedOutgoingTransactions(wallet, periods);
+
+    return outgoingTx.stream()
+      .map(InternalWalletTransaction::getAmount)
+      .reduce(BigDecimal.ZERO, BigDecimal::add);
+  }
+
+  private List<InternalWalletTransaction> findSharedOutgoingTransactions(Wallet sharedWallet, List<SettlementSharePeriod> periods) {
+    QInternalWalletTransaction tx = QInternalWalletTransaction.internalWalletTransaction;
+
+    BooleanBuilder periodBuilder = new BooleanBuilder();
+    for (SettlementSharePeriod period : periods) {
+      LocalDateTime end = period.getStoppedAt() != null ? period.getStoppedAt() : LocalDateTime.now();
+      periodBuilder.or(tx.transactedAt.between(period.getStartedAt(), end));
+    }
+
+    BooleanBuilder typeCondition = new BooleanBuilder()
+      .and(tx.type.in(
+        List.of(
+          WalletTransactionType.QR_PAYMENT,
+          WalletTransactionType.TRANSFER_OUT,
+          WalletTransactionType.SETTLEMENT_SEND
+        )
+      ));
+
+    BooleanBuilder walletCondition = new BooleanBuilder()
+      .and(tx.wallet.eq(sharedWallet));
+
+    return queryFactory
+      .selectFrom(tx)
+      .where(walletCondition.and(typeCondition).and(periodBuilder))
       .fetch();
-
-    if (periods.isEmpty()) return BigDecimal.ZERO;
-
-    BooleanBuilder timeCondition = new BooleanBuilder();
-    for (SettlementSharePeriod p : periods) {
-      LocalDateTime end = p.getStoppedAt() != null ? p.getStoppedAt() : LocalDateTime.MAX;
-      timeCondition.or(internalTx.transactedAt.between(p.getStartedAt(), end));
-    }
-
-    BooleanBuilder internalWalletCondition = new BooleanBuilder()
-      .or(internalTx.wallet.eq(group.getReferencedWallet()))
-      .or(internalTx.counterWallet.eq(group.getReferencedWallet()));
-
-    BooleanBuilder externalTimeCondition = new BooleanBuilder();
-    for (SettlementSharePeriod p : periods) {
-      LocalDateTime end = p.getStoppedAt() != null ? p.getStoppedAt() : LocalDateTime.MAX;
-      externalTimeCondition.or(externalTx.transactedAt.between(p.getStartedAt(), end));
-    }
-
-    BooleanBuilder externalWalletCondition = new BooleanBuilder()
-      .and(externalTx.wallet.eq(group.getReferencedWallet()));
-
-    BigDecimal internalSum = queryFactory
-      .select(internalTx.amount.sum())
-      .from(internalTx)
-      .where(internalWalletCondition.and(timeCondition))
-      .fetchOne();
-
-    BigDecimal externalSum = queryFactory
-      .select(externalTx.amount.sum())
-      .from(externalTx)
-      .where(externalWalletCondition.and(externalTimeCondition))
-      .fetchOne();
-
-    return safeSum(internalSum, externalSum);
   }
 
-  private BigDecimal safeSum(BigDecimal a, BigDecimal b) {
-    return (a != null ? a : BigDecimal.ZERO).add(b != null ? b : BigDecimal.ZERO);
-  }
-
-  // 공유 주기 내 출금 합계
   public BigDecimal sumOnlyExpensesByPeriods(Wallet wallet, List<SettlementSharePeriod> periods) {
     if (periods.isEmpty()) return BigDecimal.ZERO;
 
     BooleanBuilder builder = new BooleanBuilder();
     for (SettlementSharePeriod period : periods) {
       LocalDateTime stoppedAt = period.getStoppedAt() != null ? period.getStoppedAt() : LocalDateTime.now();
-      builder.or(internalWalletTransaction.transactedAt.between(period.getStartedAt(), stoppedAt));
+      builder.or(QInternalWalletTransaction.internalWalletTransaction.transactedAt.between(period.getStartedAt(), stoppedAt));
     }
 
     List<WalletTransactionType> expenseTypes = Arrays.stream(WalletTransactionType.values())
@@ -98,14 +83,13 @@ public class SettlementTransactionQueryRepositoryImpl implements SettlementTrans
       .orElse(BigDecimal.ZERO);
   }
 
-  // 공유 주기 내 입금 합계
   public BigDecimal sumOnlyIncomeByPeriods(Wallet wallet, List<SettlementSharePeriod> periods) {
     if (periods.isEmpty()) return BigDecimal.ZERO;
 
     BooleanBuilder builder = new BooleanBuilder();
     for (SettlementSharePeriod period : periods) {
       LocalDateTime stoppedAt = period.getStoppedAt() != null ? period.getStoppedAt() : LocalDateTime.now();
-      builder.or(internalWalletTransaction.transactedAt.between(period.getStartedAt(), stoppedAt));
+      builder.or(QInternalWalletTransaction.internalWalletTransaction.transactedAt.between(period.getStartedAt(), stoppedAt));
     }
 
     List<WalletTransactionType> incomeTypes = Arrays.stream(WalletTransactionType.values())
@@ -117,15 +101,18 @@ public class SettlementTransactionQueryRepositoryImpl implements SettlementTrans
       .orElse(BigDecimal.ZERO);
   }
 
-  // 공유 주기 전체를 기준으로 출금+입금 합산
   @Override
   public BigDecimal sumNetSettlementAmount(SettlementGroup group) {
     List<SettlementSharePeriod> periods = sharePeriodRepository.findAllByGroup(group);
     Wallet wallet = group.getReferencedWallet();
 
-    BigDecimal totalExpense = sumOnlyExpensesByPeriods(wallet, periods); // 출금
-    BigDecimal totalIncome = sumOnlyIncomeByPeriods(wallet, periods);   // 입금
+    BigDecimal totalExpense = sumOnlyExpensesByPeriods(wallet, periods);
+    BigDecimal totalIncome = sumOnlyIncomeByPeriods(wallet, periods);
 
     return safeSum(totalExpense, totalIncome);
+  }
+
+  private BigDecimal safeSum(BigDecimal a, BigDecimal b) {
+    return (a != null ? a : BigDecimal.ZERO).add(b != null ? b : BigDecimal.ZERO);
   }
 }

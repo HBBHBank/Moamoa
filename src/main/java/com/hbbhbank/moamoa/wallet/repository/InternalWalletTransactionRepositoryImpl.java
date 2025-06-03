@@ -71,4 +71,35 @@ public class InternalWalletTransactionRepositoryImpl implements InternalWalletTr
     return Optional.ofNullable(result);
   }
 
+  @Override
+  public List<InternalWalletTransaction> findSharedOutgoingTransactions(Wallet sharedWallet, List<SettlementSharePeriod> periods) {
+    QInternalWalletTransaction tx = QInternalWalletTransaction.internalWalletTransaction;
+
+    // 1. 기간 조건: 공유 기간 내 거래
+    BooleanBuilder periodBuilder = new BooleanBuilder();
+    for (SettlementSharePeriod period : periods) {
+      LocalDateTime end = period.getStoppedAt() != null ? period.getStoppedAt() : LocalDateTime.now();
+      periodBuilder.or(tx.transactedAt.between(period.getStartedAt(), end));
+    }
+
+    // 2. 출금 타입 조건: QR_PAYMENT, TRANSFER_OUT 등
+    BooleanBuilder typeCondition = new BooleanBuilder()
+      .and(tx.type.in(WalletTransactionType.values()))
+      .and(tx.type.in(
+        List.of(
+          WalletTransactionType.QR_PAYMENT,
+          WalletTransactionType.TRANSFER_OUT
+        )
+      ));
+
+    // 3. 공유 지갑에서 발생한 거래
+    BooleanBuilder walletCondition = new BooleanBuilder()
+      .and(tx.wallet.eq(sharedWallet));
+
+    return queryFactory
+      .selectFrom(tx)
+      .where(walletCondition.and(typeCondition).and(periodBuilder))
+      .fetch();
+  }
+
 }

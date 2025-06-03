@@ -229,7 +229,6 @@ public class SettlementGroupServiceImpl implements SettlementGroupService {
     group.deactivate();
   }
 
-
   /**
    * 정산 내역 조회
    * - 공유 지갑에서 공유된 거래 내역의 총합을 계산
@@ -243,37 +242,41 @@ public class SettlementGroupServiceImpl implements SettlementGroupService {
     SettlementGroup group = groupRepository.findById(groupId)
       .orElseThrow(() -> new BaseException(SettlementErrorCode.GROUP_NOT_FOUND));
 
-    // 2. 정산 거래 총액 조회
-    BigDecimal totalAmount = settlementTransactionQueryRepository.sumNetSettlementAmount(group);
+    // 2. 해당 그룹의 공유 주기 목록 조회
+    List<SettlementSharePeriod> periods = sharePeriodRepository.findAllByGroup(group);
+    if (periods.isEmpty()) return List.of();
 
-    // 3. 전체 정산 멤버 수 (방장 포함 안됨)
-    int totalMemberCount = group.getMembers().size() + 1;
+    // 3. 공유 지갑 출금 내역의 총합 계산
+    BigDecimal totalAmount = settlementTransactionQueryRepository.sumOnlyExpensesByPeriods(group.getReferencedWallet(), periods);
 
-    // 4. 1인당 정산 금액 계산
-    if (totalMemberCount == 0) {
+    // 4. 참여자 수 = 멤버 수 + 방장 1명
+    int totalParticipantCount = group.getMembers().size() + 1;
+
+    if (totalParticipantCount <= 1) {
       throw new BaseException(SettlementErrorCode.NO_ZERO_TO_SETTLE);
     }
 
-    BigDecimal dividedAmount = totalAmount.divide(BigDecimal.valueOf(totalMemberCount), 2, RoundingMode.DOWN);
+    // 5. 1인당 분담 금액 계산 (소수점 아래 버림)
+    BigDecimal dividedAmount = totalAmount.divide(
+      BigDecimal.valueOf(totalParticipantCount),
+      2,
+      RoundingMode.DOWN
+    );
 
-
-    // 5. 정산 거래 내역 조회
+    // 6. 방장을 제외한 각 멤버별 정산 응답 DTO 생성
     return group.getMembers().stream()
       .filter(member -> !member.getUser().equals(group.getHost()))
       .map(member -> new SettlementTransactionResponseDto(
         member.getUser().getId(),                // fromUserId
         group.getHost().getId(),                 // toUserId
-        totalAmount,                             // 정산 총액
+        totalAmount,                             // 정산 총합
         member.isHasTransferred(),               // 송금 여부
-        totalMemberCount,                        // 정산 인원 수
-        dividedAmount                            // 1인당 금액
+        totalParticipantCount,                   // 전체 인원 수
+        dividedAmount                            // 각자 분담 금액
       ))
       .toList();
   }
 
-  /**
-   * 방장에게 송금하기
-   */
   @Override
   @Transactional
   public void transferToHost(Long groupId) {
@@ -287,18 +290,16 @@ public class SettlementGroupServiceImpl implements SettlementGroupService {
       throw new BaseException(WalletErrorCode.NOT_FOUND_WALLET);
     }
 
-    Wallet fromWallet = walletRepository.findByUserIdAndCurrency(
-      user.getId(),
-      toWallet.getCurrency()
-    ).orElseThrow(() -> new BaseException(WalletErrorCode.NOT_FOUND_WALLET));
+    Wallet fromWallet = walletRepository.findByUserIdAndCurrency(user.getId(), toWallet.getCurrency())
+      .orElseThrow(() -> new BaseException(WalletErrorCode.NOT_FOUND_WALLET));
 
     if (settlementTransactionRepository.existsByGroupAndFromUser(group, user)) {
       throw new BaseException(SettlementErrorCode.USER_ALREADY_TRANSFERRED);
     }
 
     BigDecimal totalAmount = settlementTransactionQueryRepository.sumNetSettlementAmount(group);
-
     int totalMemberCount = group.getMembers().size() + 1;
+
     if (totalMemberCount == 0) {
       throw new BaseException(SettlementErrorCode.NO_ZERO_TO_SETTLE);
     }
@@ -309,27 +310,19 @@ public class SettlementGroupServiceImpl implements SettlementGroupService {
       throw new BaseException(SettlementErrorCode.INSUFFICIENT_BALANCE);
     }
 
+    // 1. 실제 이체 수행
     fromWallet.decreaseBalance(perAmount);
     toWallet.increaseBalance(perAmount);
 
     InternalWalletTransaction tx = InternalWalletTransaction.create(
-      fromWallet,
-      toWallet,
-      WalletTransactionType.SETTLEMENT_SEND,
-      WalletTransactionStatus.SUCCESS,
-      perAmount
-    );
+      fromWallet, toWallet, WalletTransactionType.SETTLEMENT_SEND, WalletTransactionStatus.SUCCESS, perAmount);
     internalWalletTransactionRepository.save(tx);
 
-    InternalWalletTransaction counterTransaction = InternalWalletTransaction.create(
-      toWallet,
-      fromWallet,
-      WalletTransactionType.TRANSFER_IN,
-      WalletTransactionStatus.SUCCESS,
-      perAmount
-    );
-    internalWalletTransactionRepository.save(counterTransaction);
+    InternalWalletTransaction counterTx = InternalWalletTransaction.create(
+      toWallet, fromWallet, WalletTransactionType.TRANSFER_IN, WalletTransactionStatus.SUCCESS, perAmount);
+    internalWalletTransactionRepository.save(counterTx);
 
+    // 2. 정산 트랜잭션 저장
     SettlementTransaction st = SettlementTransaction.create(group, user, perAmount);
     st.markTransferred(tx);
     settlementTransactionRepository.save(st);
@@ -339,21 +332,43 @@ public class SettlementGroupServiceImpl implements SettlementGroupService {
       .findFirst()
       .ifPresent(SettlementMember::markTransferred);
 
+    // 3. 마지막 멤버까지 송금 완료했는지 확인
     boolean allDone = group.getMembers().stream().allMatch(SettlementMember::isHasTransferred);
     if (allDone) {
       group.markSettlementComplete();
 
+      // 공유 주기 종료
       group.getSharePeriods().stream()
         .filter(p -> !p.isClosed())
         .findFirst()
         .ifPresent(p -> p.stop(LocalDateTime.now()));
 
-      SettlementSharePeriod newPeriod = SettlementSharePeriod.start(group, LocalDateTime.now());
-      sharePeriodRepository.save(newPeriod);
+      // 4. 동일 멤버로 새 그룹 생성
+      SettlementGroup newGroup = SettlementGroup.builder()
+        .groupName(group.getGroupName())
+        .joinCode(UUID.randomUUID().toString().substring(0, 8))
+        .groupStatus(GroupStatus.INACTIVE)
+        .settlementStatus(SettlementStatus.BEFORE)
+        .host(group.getHost())
+        .referencedWallet(group.getReferencedWallet())
+        .maxMembers(group.getMaxMembers())
+        .build();
+      groupRepository.save(newGroup);
 
-      group.deactivate();
+      for (SettlementMember oldMember : group.getMembers()) {
+        SettlementMember newMember = SettlementMember.builder()
+          .user(oldMember.getUser())
+          .group(newGroup)
+          .build();
+        memberRepository.save(newMember);
+      }
+
+      // 기존 그룹 삭제 (트랜잭션 후반에 수행)
+      settlementTransactionRepository.deleteAllByGroup(group);
+      groupRepository.delete(group);
     }
   }
+
 
 
   /**
@@ -432,7 +447,7 @@ public class SettlementGroupServiceImpl implements SettlementGroupService {
 
     // 3. 내부 거래 - wallet 기준 (방장의 송금/수신 내역만)
     List<InternalWalletTransaction> internalTxs =
-      internalWalletTransactionRepository.findByWalletAndPeriods(sharedWallet, periods);
+      internalWalletTransactionRepository.findSharedOutgoingTransactions(sharedWallet, periods);
 
     // 4. 외부 거래 - wallet 기준만 포함 (counterWallet은 제외)
     List<ExternalWalletTransaction> externalTxs =
