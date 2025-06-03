@@ -20,6 +20,7 @@ public enum HwanbeeErrorCode implements ErrorCode {
 
   // 토큰 관련
   TOKEN_REQUEST_FAILED(HttpStatus.BAD_GATEWAY, "HWANBEE_006", "환비 토큰 발급에 실패했습니다."),
+  TOKEN_EXPIRED_AND_NO_REFRESH(HttpStatus.UNAUTHORIZED, "HWANBEE_010", "환비 access token이 만료되었고 refresh token이 없습니다."),
 
   // 이체 관련
   TRANSFER_FAILED(HttpStatus.BAD_GATEWAY, "HWANBEE_007", "환비 송금 API 요청에 실패했습니다."),

@@ -50,14 +50,14 @@ public class User {
   @Enumerated(EnumType.STRING)
   private ERole role; // Spring Security에서 사용하는 역할
 
-  @Column(name = "hwanbee_access_token")
-  private String hwanbeeAccessToken;
+  @Column(name = "access_token", length = 2000)
+  private String accessToken;
 
-  @Column(name = "hwanbee_refresh_token")
-  private String hwanbeeRefreshToken;
+  @Column(name = "refresh_token", length = 2000)
+  private String refreshToken;
 
-  @Column(name = "hwanbee_token_expire_at")
-  private LocalDateTime hwanbeeTokenExpireAt;
+  @Column(name = "expires_in")
+  private Integer expiresIn;
 
   @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
   private List<Wallet> wallets = new ArrayList<>();
@@ -108,24 +108,17 @@ public class User {
     }
   }
 
-  // 토큰 발급 시 호출되는 메서드
-  public void updateHwanbeeTokens(String accessToken, String refreshToken, int expiresInSeconds) {
-    this.hwanbeeAccessToken = accessToken;
-    this.hwanbeeRefreshToken = refreshToken;
-    this.hwanbeeTokenExpireAt = LocalDateTime.now().plusSeconds(expiresInSeconds);
-  }
-
-  // 지갑 리스트에 추가
   public void addWallet(Wallet wallet) {
     this.wallets.add(wallet);
   }
 
-  // 지갑 리스트 삭제
-  public void removeWallet(Wallet wallet) {
-    this.wallets.remove(wallet);
-  }
-
   public void updateProfileImage(ProfileImage newImage) {
     this.profileImage = newImage;
+  }
+
+  public void updateTokens(String accessToken, String refreshToken, Integer expiresIn) {
+    this.accessToken = accessToken;
+    this.refreshToken = refreshToken;
+    this.expiresIn = expiresIn;
   }
 }

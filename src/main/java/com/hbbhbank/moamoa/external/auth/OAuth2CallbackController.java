@@ -1,40 +1,54 @@
 package com.hbbhbank.moamoa.external.auth;
 
+import com.hbbhbank.moamoa.external.dto.request.OAuth2TokenRequestDto;
+import com.hbbhbank.moamoa.global.common.BaseResponse;
 import com.hbbhbank.moamoa.global.exception.BaseException;
-import com.hbbhbank.moamoa.global.security.util.SecurityUtil;
 import com.hbbhbank.moamoa.user.domain.User;
 import com.hbbhbank.moamoa.user.exception.UserErrorCode;
 import com.hbbhbank.moamoa.user.repository.UserRepository;
+import com.hbbhbank.moamoa.user.service.UserService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/oauth2")
+@RequestMapping("/api/v1/oauth2")
 public class OAuth2CallbackController {
 
   private final UserRepository userRepository;
   private final OAuth2TokenService oAuth2TokenService;
+  private final UserService userService;
 
   /**
-   * 환비 인가 서버가 인가 코드 발급 후 이 URI로 리디렉션함
-   * → code로 access/refresh token 발급
+   * 프론트에서 전달받은 인가 코드로 AccessToken 발급 요청
    */
-  @GetMapping("/callback")
-  public ResponseEntity<String> oauthCallback(
-    @RequestParam String code,
-    @RequestParam String state // 추후 state 검증용
+  @PostMapping("/token")
+  public ResponseEntity<BaseResponse<String>> requestToken(
+    @RequestBody @Valid OAuth2TokenRequestDto req
   ) {
-    Long userId = SecurityUtil.getCurrentUserId(); // 로그인된 사용자
+    Long userId = userService.getCurrentUserId();
     User user = userRepository.findById(userId)
       .orElseThrow(() -> new BaseException(UserErrorCode.USER_NOT_FOUND));
 
-    String token = oAuth2TokenService.ensureAccessToken(user, code);
-    return ResponseEntity.ok("토큰 저장 완료: " + token);
+    // 인가 코드로 액세스 토큰 발급 및 저장
+    String accessToken = oAuth2TokenService.storeInitialTokens(user, req.code());
+    return ResponseEntity.ok(BaseResponse.success(accessToken));
+  }
+
+  /**
+   * 사용자 환비 인증 여부 조회 (access token이 있고 유효한지)
+   */
+  @GetMapping("/status")
+  public ResponseEntity<BaseResponse<Boolean>> checkHwanbeeAuthenticated() {
+    Long userId = userService.getCurrentUserId();
+    User user = userRepository.findById(userId)
+      .orElseThrow(() -> new BaseException(UserErrorCode.USER_NOT_FOUND));
+
+    boolean authenticated = user.getAccessToken() != null &&
+      user.getExpiresIn() != null;
+
+    return ResponseEntity.ok(BaseResponse.success(authenticated));
   }
 }
-
