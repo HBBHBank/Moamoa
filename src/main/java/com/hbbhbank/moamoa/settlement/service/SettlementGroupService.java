@@ -60,7 +60,7 @@ public interface SettlementGroupService {
    * 정산 시작
    * - 현재 공유 중인 거래 기록을 중단하고, 그룹 상태를 정산 진행 중(IN_PROGRESS)으로 변경
    */
-  void startSettlement(Long groupId);
+  SettlementStartResponseDto startSettlement(Long groupId);
 
   /**
    * 정산 취소
@@ -95,7 +95,7 @@ public interface SettlementGroupService {
   /**
    * 공유 지갑의 거래 내역 공유
    */
-  List<TransactionResponseDto> getSharedTransactions(Long groupId, Long userId);
+  List<TransactionResponseDto> getSharedTransactions(Long groupId);
 
   /**
    * 정산 그룹 활성화 (공유 시작)

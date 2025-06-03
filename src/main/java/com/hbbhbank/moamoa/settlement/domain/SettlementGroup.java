@@ -60,13 +60,6 @@ public class SettlementGroup {
   @Column(name = "join_code_attempt_count", nullable = false)
   private int joinAttemptCount = 0; // 초대 코드 입력 시도 횟수
 
-  // 공유 거래 내역 필터링 기준 시점
-  @Column(name = "share_start_at")
-  private LocalDateTime transactionShareStartAt; // 거래 공유 시작 시점
-
-  @Column(name = "transaction_share_stop_at")
-  private LocalDateTime transactionShareStopAt;  // 정산 시작 버튼 누른 시점
-
   @Column(nullable = false)
   private Integer maxMembers;
 
@@ -75,14 +68,13 @@ public class SettlementGroup {
 
   @Builder
   public SettlementGroup(String groupName, String joinCode, GroupStatus groupStatus, SettlementStatus settlementStatus,
-                         User host, Wallet referencedWallet, LocalDateTime transactionShareStartAt, Integer maxMembers) {
+                         User host, Wallet referencedWallet, Integer maxMembers) {
     this.groupName = groupName;
     this.joinCode = joinCode;
     this.groupStatus = groupStatus;
     this.settlementStatus = settlementStatus;
     this.host = host;
     this.referencedWallet = referencedWallet;
-    this.transactionShareStartAt = transactionShareStartAt;
     this.maxMembers = maxMembers;
   }
 
@@ -92,14 +84,6 @@ public class SettlementGroup {
 
   public void activate() {
     this.groupStatus = GroupStatus.ACTIVE;
-  }
-
-  public void updateShareStartAt(LocalDateTime time) {
-    this.transactionShareStartAt = time;
-  }
-
-  public void updateShareStopAt(LocalDateTime time) {
-    this.transactionShareStopAt = time;
   }
 
   public void markSettlementInProgress() {
@@ -121,12 +105,6 @@ public class SettlementGroup {
       this.joinCodeExpiredAt.isAfter(LocalDateTime.now());
   }
 
-  // 정산 완료 후 공유 재시작 시
-  public void restartSharing(LocalDateTime newStartAt) {
-    updateShareStartAt(newStartAt);
-    updateShareStopAt(null);
-  }
-
   // 초대 코드 재발급
   public void updateJoinCode(String code, LocalDateTime expiredAt) {
     this.joinCode = code;
@@ -140,6 +118,10 @@ public class SettlementGroup {
 
   public boolean hasMember(Long userId) {
     return members.stream().anyMatch(m -> m.getUser().getId().equals(userId));
+  }
+
+  public boolean isHost(Long userId) {
+    return this.host.getId().equals(userId);
   }
 }
 

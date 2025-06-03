@@ -35,7 +35,7 @@ public class InternalWalletTransactionRepositoryImpl implements InternalWalletTr
       builder.or(
         tx.transactedAt.between(
           period.getStartedAt(),
-          period.getStoppedAt() != null ? period.getStoppedAt() : LocalDateTime.now()
+          period.getStoppedAt() != null ? period.getStoppedAt() : LocalDateTime.MAX
         )
       );
     }
@@ -43,7 +43,7 @@ public class InternalWalletTransactionRepositoryImpl implements InternalWalletTr
     return queryFactory
       .selectFrom(tx)
       .where(
-        tx.wallet.eq(wallet).and(builder)
+        tx.wallet.id.eq(wallet.getId()).and(builder)
       )
       .orderBy(tx.transactedAt.asc())
       .fetch();

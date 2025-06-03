@@ -2,6 +2,7 @@ package com.hbbhbank.moamoa.settlement.repository;
 
 import com.hbbhbank.moamoa.settlement.domain.SettlementGroup;
 import com.hbbhbank.moamoa.settlement.domain.SettlementSharePeriod;
+import com.hbbhbank.moamoa.wallet.domain.QExternalWalletTransaction;
 import com.hbbhbank.moamoa.wallet.domain.QInternalWalletTransaction;
 import com.hbbhbank.moamoa.settlement.domain.QSettlementSharePeriod;
 import com.querydsl.core.BooleanBuilder;
@@ -21,7 +22,8 @@ public class SettlementTransactionQueryRepositoryImpl implements SettlementTrans
 
   @Override
   public BigDecimal sumByGroupSharePeriods(SettlementGroup group) {
-    QInternalWalletTransaction tx = QInternalWalletTransaction.internalWalletTransaction;
+    QInternalWalletTransaction internalTx = QInternalWalletTransaction.internalWalletTransaction;
+    QExternalWalletTransaction externalTx = QExternalWalletTransaction.externalWalletTransaction;
     QSettlementSharePeriod period = QSettlementSharePeriod.settlementSharePeriod;
 
     List<SettlementSharePeriod> periods = queryFactory
@@ -29,16 +31,51 @@ public class SettlementTransactionQueryRepositoryImpl implements SettlementTrans
       .where(period.group.eq(group))
       .fetch();
 
-    BooleanBuilder timeCondition = new BooleanBuilder();
-    for (SettlementSharePeriod p : periods) {
-      LocalDateTime stop = p.getStoppedAt() != null ? p.getStoppedAt() : LocalDateTime.now();
-      timeCondition.or(tx.transactedAt.between(p.getStartedAt(), stop));
+    if (periods.isEmpty()) {
+      return BigDecimal.ZERO;
     }
 
-    return queryFactory
-      .select(tx.amount.sum())
-      .from(tx)
-      .where(tx.wallet.eq(group.getReferencedWallet()).and(timeCondition))
+    // 시간 조건 - 내부 거래
+    BooleanBuilder timeCondition = new BooleanBuilder();
+    for (SettlementSharePeriod p : periods) {
+      LocalDateTime end = p.getStoppedAt() != null ? p.getStoppedAt() : LocalDateTime.MAX;
+      timeCondition.or(internalTx.transactedAt.between(p.getStartedAt(), end));
+    }
+
+    // 내부 거래: wallet 또는 counterWallet이 공유 지갑
+    BooleanBuilder internalWalletCondition = new BooleanBuilder()
+      .or(internalTx.wallet.eq(group.getReferencedWallet()))
+      .or(internalTx.counterWallet.eq(group.getReferencedWallet()));
+
+    // 외부 거래 시간 조건
+    BooleanBuilder externalTimeCondition = new BooleanBuilder();
+    for (SettlementSharePeriod p : periods) {
+      LocalDateTime end = p.getStoppedAt() != null ? p.getStoppedAt() : LocalDateTime.MAX;
+      externalTimeCondition.or(externalTx.transactedAt.between(p.getStartedAt(), end));
+    }
+
+    // 외부 거래: 지갑이 공유 지갑
+    BooleanBuilder externalWalletCondition = new BooleanBuilder()
+      .and(externalTx.wallet.eq(group.getReferencedWallet()));
+
+    // 내부 거래 총합
+    BigDecimal internalSum = queryFactory
+      .select(internalTx.amount.sum())
+      .from(internalTx)
+      .where(internalWalletCondition.and(timeCondition))
       .fetchOne();
+
+    // 외부 거래 총합
+    BigDecimal externalSum = queryFactory
+      .select(externalTx.amount.sum())
+      .from(externalTx)
+      .where(externalWalletCondition.and(externalTimeCondition))
+      .fetchOne();
+
+    return safeSum(internalSum, externalSum);
+  }
+
+  private BigDecimal safeSum(BigDecimal a, BigDecimal b) {
+    return (a != null ? a : BigDecimal.ZERO).add(b != null ? b : BigDecimal.ZERO);
   }
 }

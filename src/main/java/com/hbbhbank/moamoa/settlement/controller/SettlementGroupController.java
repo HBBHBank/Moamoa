@@ -61,9 +61,9 @@ public class SettlementGroupController {
    * 정산 시작
    */
   @PostMapping("/{groupId}/start")
-  public ResponseEntity<BaseResponse<Void>> startSettlement(@PathVariable Long groupId) {
-    settlementGroupService.startSettlement(groupId);
-    return ResponseEntity.ok(BaseResponse.success(null));
+  public ResponseEntity<BaseResponse<SettlementStartResponseDto>> startSettlement(@PathVariable Long groupId) {
+    SettlementStartResponseDto result = settlementGroupService.startSettlement(groupId);
+    return ResponseEntity.ok(BaseResponse.success(result));
   }
 
   /**
@@ -105,14 +105,13 @@ public class SettlementGroupController {
   }
 
   /**
-   * 방장의 거래 내역 공유 조회 (정산 멤버만 접근 가능)
+   * 방장의 거래 내역 공유 조회
    */
   @GetMapping("/{groupId}/shared-transactions")
   public ResponseEntity<BaseResponse<List<TransactionResponseDto>>> getSharedTransactions(
     @PathVariable Long groupId
   ) {
-    Long userId = userService.getCurrentUserId();
-    List<TransactionResponseDto> txs = settlementGroupService.getSharedTransactions(groupId, userId);
+    List<TransactionResponseDto> txs = settlementGroupService.getSharedTransactions(groupId);
     return ResponseEntity.ok(BaseResponse.success(txs));
   }
 
