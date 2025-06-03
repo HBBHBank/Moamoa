@@ -14,4 +14,6 @@ public interface SettlementTransactionRepository extends JpaRepository<Settlemen
 
   // 중복 송금 방지용
   boolean existsByGroupAndFromUser(SettlementGroup group, User fromUser);
+
+  void deleteAllByGroup(SettlementGroup group);
 }

@@ -7,15 +7,14 @@ import com.hbbhbank.moamoa.settlement.dto.request.VerifyJoinCodeRequestDto;
 import com.hbbhbank.moamoa.settlement.dto.response.*;
 import com.hbbhbank.moamoa.settlement.exception.SettlementErrorCode;
 import com.hbbhbank.moamoa.settlement.repository.*;
-import com.hbbhbank.moamoa.transfer.dto.request.PointTransferRequestDto;
 import com.hbbhbank.moamoa.user.domain.User;
 import com.hbbhbank.moamoa.user.service.UserService;
 import com.hbbhbank.moamoa.wallet.domain.*;
 import com.hbbhbank.moamoa.wallet.dto.response.transaction.TransactionResponseDto;
+import com.hbbhbank.moamoa.wallet.exception.WalletErrorCode;
 import com.hbbhbank.moamoa.wallet.repository.ExternalWalletTransactionRepository;
 import com.hbbhbank.moamoa.wallet.repository.InternalWalletTransactionRepository;
 import com.hbbhbank.moamoa.wallet.repository.WalletRepository;
-import com.hbbhbank.moamoa.wallet.service.WalletService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,7 +37,6 @@ public class SettlementGroupServiceImpl implements SettlementGroupService {
   private final SettlementTransactionRepository settlementTransactionRepository;
   private final UserService userService;
   private final WalletRepository walletRepository;
-  private final WalletService walletService;
   private final InternalWalletTransactionRepository internalWalletTransactionRepository;
   private final SettlementTransactionQueryRepository settlementTransactionQueryRepository;
   private final SettlementSharePeriodRepository sharePeriodRepository;
@@ -61,7 +59,7 @@ public class SettlementGroupServiceImpl implements SettlementGroupService {
     Wallet wallet = walletRepository.findById(request.walletId())
       .orElseThrow(() -> new BaseException(SettlementErrorCode.GROUP_NOT_FOUND));
 
-    // 3. 해당 지갑이 이미 공유 지갑으로 사용 중인지 확인
+    // 3. 해당 지갑이 이미 공유 지갑으로 사용 중인지 확인 -> 이미 공유 지갑으로 사용 중이면 예외 처리
     if (groupRepository.existsByReferencedWallet(wallet)) {
       throw new BaseException(SettlementErrorCode.SETTLEMENT_ALREADY_STARTED);
     }
@@ -84,6 +82,9 @@ public class SettlementGroupServiceImpl implements SettlementGroupService {
     );
   }
 
+  /**
+   * 초대 코드로 정산 그룹 방 참여
+   */
   @Override
   @Transactional
   public VerifyJoinCodeResponseDto verifyJoinCode(VerifyJoinCodeRequestDto request) {
@@ -147,33 +148,32 @@ public class SettlementGroupServiceImpl implements SettlementGroupService {
   @Override
   @Transactional
   public SettlementStartResponseDto startSettlement(Long groupId) {
-    // 1. 그룹 조회
     SettlementGroup group = groupRepository.findById(groupId)
       .orElseThrow(() -> new BaseException(SettlementErrorCode.GROUP_NOT_FOUND));
 
-    // 2. 정산 상태가 'BEFORE'가 아닐 경우 예외
-    if (group.getSettlementStatus() != SettlementStatus.BEFORE) {
-      throw new BaseException(SettlementErrorCode.SETTLEMENT_ALREADY_STARTED);
-    }
+    // 1. 공유 주기 종료 전에 정산 금액 계산
+    BigDecimal totalAmount = settlementTransactionQueryRepository.sumNetSettlementAmount(group);
 
-    // 3. 현재 진행 중인 공유 기간이 있다면 종료 처리
+    // 2. 공유 주기 종료
     group.getSharePeriods().stream()
       .filter(p -> !p.isClosed())
       .findFirst()
       .ifPresent(p -> p.stop(LocalDateTime.now()));
 
-    // 4. 정산 상태 변경 및 그룹 비활성화
-    group.markSettlementInProgress();
+    // 3. 그룹 비활성화, 정산 상태 변경
     group.deactivate();
+    group.markSettlementInProgress();
 
-    // 5. 정산 대상 멤버와 금액 계산 (예시)
-    List<Long> selectedMembers = group.getMembers().stream()
-      .map(SettlementMember::getId)
-      .collect(Collectors.toList());
-    Long settlementAmount = 0L; // 실제 정산 금액 계산 로직으로 대체
+    // 4. 정산 멤버 상태 초기화
+    group.getMembers().forEach(SettlementMember::resetTransferred);
 
-    return new SettlementStartResponseDto(selectedMembers, settlementAmount);
+    // 5. 정산 금액 계산
+    int totalMemberCount = group.getMembers().size() + 1; // 방장 포함
+    BigDecimal dividedAmount = totalAmount.divide(BigDecimal.valueOf(totalMemberCount), 2, RoundingMode.DOWN);
+
+    return new SettlementStartResponseDto(totalMemberCount, totalAmount, dividedAmount);
   }
+
 
 
   /**
@@ -225,8 +225,8 @@ public class SettlementGroupServiceImpl implements SettlementGroupService {
     settlementTransactionRepository.deleteAll(transactions);
 
     // 6. 그룹 상태 초기화
-    group.markSettlementBefore();
-    group.activate();
+    group.markSettlementComplete();
+    group.deactivate();
   }
 
 
@@ -244,17 +244,18 @@ public class SettlementGroupServiceImpl implements SettlementGroupService {
       .orElseThrow(() -> new BaseException(SettlementErrorCode.GROUP_NOT_FOUND));
 
     // 2. 정산 거래 총액 조회
-    BigDecimal totalAmount = settlementTransactionQueryRepository.sumByGroupSharePeriods(group);
+    BigDecimal totalAmount = settlementTransactionQueryRepository.sumNetSettlementAmount(group);
 
     // 3. 전체 정산 멤버 수 (방장 포함 안됨)
-    int totalMemberCount = group.getMembers().size();
+    int totalMemberCount = group.getMembers().size() + 1;
 
-    // 4. 1인당 정산 금액 (방장 제외 인원 기준으로 나눔)
-    int dividedMemberCount = (int) group.getMembers().stream()
-      .filter(member -> !member.getUser().equals(group.getHost()))
-      .count();
+    // 4. 1인당 정산 금액 계산
+    if (totalMemberCount == 0) {
+      throw new BaseException(SettlementErrorCode.NO_ZERO_TO_SETTLE);
+    }
 
-    BigDecimal dividedAmount = totalAmount.divide(BigDecimal.valueOf(dividedMemberCount), RoundingMode.DOWN);
+    BigDecimal dividedAmount = totalAmount.divide(BigDecimal.valueOf(totalMemberCount), 2, RoundingMode.DOWN);
+
 
     // 5. 정산 거래 내역 조회
     return group.getMembers().stream()
@@ -275,70 +276,82 @@ public class SettlementGroupServiceImpl implements SettlementGroupService {
    */
   @Override
   @Transactional
-  public void transferToHost(Long groupId, PointTransferRequestDto request) {
-    // 1. 정산 그룹 조회
+  public void transferToHost(Long groupId) {
+    User user = userService.getCurrentUser();
+
     SettlementGroup group = groupRepository.findById(groupId)
       .orElseThrow(() -> new BaseException(SettlementErrorCode.GROUP_NOT_FOUND));
 
-    // 2. 현재 로그인한 사용자 조회 (송금자)
-    User fromUser = userService.getCurrentUser();
-
-    // 3. 송금자 지갑 번호로 지갑 조회 및 검증
-    Wallet fromWallet = walletService.getWalletByNumberOrThrow(request.fromWalletNumber());
-
-    // 4. 방장의 공유 지갑 조회 (수신자 지갑)
     Wallet toWallet = group.getReferencedWallet();
-
-    // 5. 송금자 잔액 부족 여부 확인
-    if (fromWallet.getBalance().compareTo(request.amount()) < 0) {
-      throw new BaseException(SettlementErrorCode.INSUFFICIENT_BALANCE);
+    if (toWallet == null) {
+      throw new BaseException(WalletErrorCode.NOT_FOUND_WALLET);
     }
 
-    // 6. 이미 송금한 사용자라면 예외 처리
-    if (settlementTransactionRepository.existsByGroupAndFromUser(group, fromUser)) {
+    Wallet fromWallet = walletRepository.findByUserIdAndCurrency(
+      user.getId(),
+      toWallet.getCurrency()
+    ).orElseThrow(() -> new BaseException(WalletErrorCode.NOT_FOUND_WALLET));
+
+    if (settlementTransactionRepository.existsByGroupAndFromUser(group, user)) {
       throw new BaseException(SettlementErrorCode.USER_ALREADY_TRANSFERRED);
     }
 
-    // 7. 송금자 잔액 차감, 수신자 잔액 증가
-    fromWallet.decreaseBalance(request.amount());
-    toWallet.increaseBalance(request.amount());
+    BigDecimal totalAmount = settlementTransactionQueryRepository.sumNetSettlementAmount(group);
 
-    // 8. 내부 거래 트랜잭션 생성 및 저장
-    InternalWalletTransaction sendTx = InternalWalletTransaction.create(
-      fromWallet, toWallet,
+    int totalMemberCount = group.getMembers().size() + 1;
+    if (totalMemberCount == 0) {
+      throw new BaseException(SettlementErrorCode.NO_ZERO_TO_SETTLE);
+    }
+
+    BigDecimal perAmount = totalAmount.divide(BigDecimal.valueOf(totalMemberCount), 2, RoundingMode.DOWN);
+
+    if (fromWallet.getBalance().compareTo(perAmount) < 0) {
+      throw new BaseException(SettlementErrorCode.INSUFFICIENT_BALANCE);
+    }
+
+    fromWallet.decreaseBalance(perAmount);
+    toWallet.increaseBalance(perAmount);
+
+    InternalWalletTransaction tx = InternalWalletTransaction.create(
+      fromWallet,
+      toWallet,
       WalletTransactionType.SETTLEMENT_SEND,
       WalletTransactionStatus.SUCCESS,
-      request.amount()
+      perAmount
     );
-    internalWalletTransactionRepository.save(sendTx);
+    internalWalletTransactionRepository.save(tx);
 
-    // 9. 정산 거래 내역 생성 및 상태 업데이트
-    SettlementTransaction st = SettlementTransaction.create(group, fromUser, request.amount());
-    st.markTransferred(sendTx);
+    InternalWalletTransaction counterTransaction = InternalWalletTransaction.create(
+      toWallet,
+      fromWallet,
+      WalletTransactionType.TRANSFER_IN,
+      WalletTransactionStatus.SUCCESS,
+      perAmount
+    );
+    internalWalletTransactionRepository.save(counterTransaction);
+
+    SettlementTransaction st = SettlementTransaction.create(group, user, perAmount);
+    st.markTransferred(tx);
     settlementTransactionRepository.save(st);
 
-    // 10. 정산 멤버의 송금 상태 업데이트
     group.getMembers().stream()
-      .filter(m -> m.getUser().equals(fromUser))
+      .filter(m -> m.getUser().equals(user))
       .findFirst()
       .ifPresent(SettlementMember::markTransferred);
 
-    // 11. 모든 멤버가 송금 완료했는지 확인 후, 정산 완료 처리 및 공유 재시작
-    boolean allTransferred = group.getMembers().stream().allMatch(SettlementMember::isHasTransferred);
-    if (allTransferred) {
-      group.markSettlementComplete(); // 정산 완료 상태 변경
+    boolean allDone = group.getMembers().stream().allMatch(SettlementMember::isHasTransferred);
+    if (allDone) {
+      group.markSettlementComplete();
 
-      // 현재 열린 공유 기간이 있다면 종료
       group.getSharePeriods().stream()
         .filter(p -> !p.isClosed())
         .findFirst()
         .ifPresent(p -> p.stop(LocalDateTime.now()));
 
-      // 새로운 공유 기간 시작
       SettlementSharePeriod newPeriod = SettlementSharePeriod.start(group, LocalDateTime.now());
       sharePeriodRepository.save(newPeriod);
 
-      group.activate(); // 그룹 재활성화
+      group.deactivate();
     }
   }
 
@@ -361,17 +374,8 @@ public class SettlementGroupServiceImpl implements SettlementGroupService {
       throw new BaseException(SettlementErrorCode.SETTLEMENT_IN_PROGRESS);
     }
 
-    // 3. COMPLETE 상태인 경우 모든 멤버의 송금 완료 여부 확인
-    if (group.getSettlementStatus() == SettlementStatus.COMPLETE) {
-      boolean allSettled = group.getMembers().stream()
-        .allMatch(SettlementMember::isHasTransferred);
-
-      if (!allSettled) {
-        throw new BaseException(SettlementErrorCode.SETTLEMENT_NOT_COMPLETE);
-      }
-    }
-
-    // 4. 그룹 삭제 (cascade 옵션을 통해 자식 엔티티도 삭제됨)
+    // 3. 그룹 삭제 (cascade 옵션을 통해 자식 엔티티도 삭제됨)
+    settlementTransactionRepository.deleteAllByGroup(group);
     groupRepository.delete(group);
   }
 
@@ -404,42 +408,45 @@ public class SettlementGroupServiceImpl implements SettlementGroupService {
     group.getMembers().remove(target);
   }
 
-
   /**
-   * 방장의 공유 지갑의 거래 내역 공유
-   * - 정산 그룹에 참여한 사용자만 접근 가능
-   * - 그룹에 설정된 공유 기간 내 거래 내역만 반환
+   * 방장의 공유 지갑 거래 내역 공유
+   * - 정산 그룹에 설정된 공유 지갑의 거래 내역만 공유
+   * - 그룹에 설정된 공유 기간 내 거래만 포함
+   * - 그룹 참여자만 접근 가능
    */
   @Override
   @Transactional(readOnly = true)
   public List<TransactionResponseDto> getSharedTransactions(Long groupId) {
+    // 1. 그룹 + 공유 지갑 확인
     SettlementGroup group = groupRepository.findById(groupId)
       .orElseThrow(() -> new BaseException(SettlementErrorCode.GROUP_NOT_FOUND));
 
-    if (group.getGroupStatus() != GroupStatus.ACTIVE) {
-      throw new BaseException(SettlementErrorCode.SHARE_DISABLED);
+    Wallet sharedWallet = group.getReferencedWallet();
+    if (sharedWallet == null) {
+      throw new BaseException(SettlementErrorCode.WALLET_NOT_LINKED);
     }
 
+    // 2. 공유 주기 조회
     List<SettlementSharePeriod> periods = sharePeriodRepository.findAllByGroup(group);
+    if (periods.isEmpty()) return List.of();
 
-    List<InternalWalletTransaction> internals =
-      internalWalletTransactionRepository.findByWalletAndPeriods(group.getReferencedWallet(), periods);
+    // 3. 내부 거래 - wallet 기준 (방장의 송금/수신 내역만)
+    List<InternalWalletTransaction> internalTxs =
+      internalWalletTransactionRepository.findByWalletAndPeriods(sharedWallet, periods);
 
-    List<ExternalWalletTransaction> externals =
-      externalWalletTransactionRepository.findByWalletAndPeriods(group.getReferencedWallet(), periods);
+    // 4. 외부 거래 - wallet 기준만 포함 (counterWallet은 제외)
+    List<ExternalWalletTransaction> externalTxs =
+      externalWalletTransactionRepository.findByWalletAndPeriods(sharedWallet, periods);
 
-    List<TransactionResponseDto> internalDtos = internals.stream()
-      .map(TransactionResponseDto::from)
-      .toList();
-
-    List<TransactionResponseDto> externalDtos = externals.stream()
-      .map(TransactionResponseDto::from)
-      .toList();
-
-    return Stream.concat(internalDtos.stream(), externalDtos.stream())
+    // 5. 정렬 + 변환
+    return Stream.concat(
+        internalTxs.stream().map(TransactionResponseDto::from),
+        externalTxs.stream().map(TransactionResponseDto::from)
+      )
       .sorted(Comparator.comparing(TransactionResponseDto::transactedAt).reversed())
       .toList();
   }
+
 
 
   /**
@@ -449,20 +456,19 @@ public class SettlementGroupServiceImpl implements SettlementGroupService {
   @Override
   @Transactional
   public void deactivateGroup(Long groupId) {
-    // 1. 정산 그룹 조회
     SettlementGroup group = groupRepository.findById(groupId)
       .orElseThrow(() -> new BaseException(SettlementErrorCode.GROUP_NOT_FOUND));
 
-    // 2. 그룹 상태 확인
     if (group.getGroupStatus() == GroupStatus.INACTIVE) {
       throw new BaseException(SettlementErrorCode.ALREADY_INACTIVE);
     }
 
-    // 3. 열려 있는 모든 공유 기간 종료
+    // 정산 공유 종료: 현재 열린 주기만 닫음 (과거 주기는 그대로 보존됨)
     group.getSharePeriods().stream()
       .filter(p -> !p.isClosed())
       .forEach(p -> p.stop(LocalDateTime.now()));
 
+    // 그룹 상태를 비활성화로 변경 (새로운 공유 주기는 생성되지 않음)
     group.deactivate();
   }
 
@@ -526,13 +532,19 @@ public class SettlementGroupServiceImpl implements SettlementGroupService {
     boolean isHost = group.getHost().getId().equals(userId);
     boolean isMember = group.hasMember(userId);
 
-    // 멤버가 아닌데 허용 플래그도 false이면 접근 불가
+
     if (!isHost && !isMember && !allowIfJoinCodeValid) {
       throw new BaseException(SettlementErrorCode.NO_ACCESS_TO_GROUP);
     }
 
+    // 공유 주기 목록 변환
+    List<SettlementSharePeriodDto> sharePeriods = sharePeriodRepository.findAllByGroup(group).stream()
+      .map(p -> new SettlementSharePeriodDto(p.getStartedAt(), p.getStoppedAt()))
+      .toList();
+
     return SettlementGroupResponseDto.from(group, userId);
   }
+
 
   @Override
   @Transactional(readOnly = true)

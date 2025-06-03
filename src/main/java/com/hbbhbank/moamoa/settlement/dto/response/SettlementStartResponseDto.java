@@ -1,9 +1,9 @@
 package com.hbbhbank.moamoa.settlement.dto.response;
 
-import java.util.List;
+import java.math.BigDecimal;
 
 public record SettlementStartResponseDto(
-  List<Long> selectedMembers,
-  Long settlementAmount
-) {
-}
+  int selectedMembers,
+  BigDecimal totalAmount,
+  BigDecimal perAmount
+) {}

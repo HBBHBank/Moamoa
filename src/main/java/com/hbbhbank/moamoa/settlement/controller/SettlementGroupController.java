@@ -84,14 +84,11 @@ public class SettlementGroupController {
   }
 
   /**
-   * 방장에게 송금
+   * 방장에게 자동 송금 (프론트에서 바디 없이 호출)
    */
   @PostMapping("/{groupId}/transfer")
-  public ResponseEntity<BaseResponse<Void>> transferToHost(
-    @PathVariable Long groupId,
-    @RequestBody @Valid PointTransferRequestDto request
-  ) {
-    settlementGroupService.transferToHost(groupId, request);
+  public ResponseEntity<BaseResponse<Void>> transferToHost(@PathVariable Long groupId) {
+    settlementGroupService.transferToHost(groupId);
     return ResponseEntity.ok(BaseResponse.success(null));
   }
 

@@ -59,6 +59,15 @@ public class PointTransferServiceImpl implements PointTransferService {
     );
     walletTransactionRepository.save(transaction);
 
+    InternalWalletTransaction counterTransaction = InternalWalletTransaction.create(
+      toWallet,
+      fromWallet,
+      WalletTransactionType.TRANSFER_IN,
+      WalletTransactionStatus.SUCCESS,
+      dto.amount()
+    );
+    walletTransactionRepository.save(counterTransaction);
+
     return new PointTransferResponseDto(
       toWallet.getUser().getName(),
       toWallet.getWalletNumber(),

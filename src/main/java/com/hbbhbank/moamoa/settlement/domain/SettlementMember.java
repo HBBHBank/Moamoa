@@ -37,5 +37,9 @@ public class SettlementMember {
   public void markTransferred() {
     this.hasTransferred = true;
   }
+
+  public void resetTransferred() {
+    this.hasTransferred = false;
+  }
 }
 

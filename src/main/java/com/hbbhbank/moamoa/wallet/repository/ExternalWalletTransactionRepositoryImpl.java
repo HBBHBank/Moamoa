@@ -29,20 +29,21 @@ public class ExternalWalletTransactionRepositoryImpl implements ExternalWalletTr
   public List<ExternalWalletTransaction> findByWalletAndPeriods(Wallet wallet, List<SettlementSharePeriod> periods) {
     QExternalWalletTransaction tx = QExternalWalletTransaction.externalWalletTransaction;
 
-    BooleanBuilder builder = new BooleanBuilder();
+    // 공유 주기 내 거래 시간 조건
+    BooleanBuilder periodCondition = new BooleanBuilder();
     for (SettlementSharePeriod period : periods) {
-      builder.or(tx.transactedAt.between(
-        period.getStartedAt(),
-        period.getStoppedAt() != null ? period.getStoppedAt() : LocalDateTime.MAX
-      ));
+      LocalDateTime end = period.getStoppedAt() != null ? period.getStoppedAt() : LocalDateTime.now();
+      periodCondition.or(tx.transactedAt.between(period.getStartedAt(), end));
     }
+
+    // 공유 지갑이 거래 주체(wallet)인 경우만 필터링
+    BooleanBuilder walletCondition = new BooleanBuilder().and(tx.wallet.eq(wallet));
 
     return queryFactory
       .selectFrom(tx)
-      .where(
-        tx.wallet.id.eq(wallet.getId()).and(builder)
-      )
+      .where(walletCondition.and(periodCondition))
       .orderBy(tx.transactedAt.asc())
       .fetch();
   }
+
 }

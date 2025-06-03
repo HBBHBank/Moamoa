@@ -1,5 +1,6 @@
 package com.hbbhbank.moamoa.settlement.domain;
 
+import com.hbbhbank.moamoa.settlement.repository.SettlementTransactionQueryRepository;
 import com.hbbhbank.moamoa.user.domain.User;
 import com.hbbhbank.moamoa.wallet.domain.Wallet;
 import jakarta.persistence.*;
@@ -10,6 +11,7 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.DynamicUpdate;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -66,6 +68,10 @@ public class SettlementGroup {
   @OneToMany(mappedBy = "group", cascade = CascadeType.ALL, orphanRemoval = true)
   private List<SettlementSharePeriod> sharePeriods = new ArrayList<>();
 
+  @OneToMany(mappedBy = "group", cascade = CascadeType.REMOVE, orphanRemoval = true)
+  private List<SettlementTransaction> settlementTransactions;
+
+
   @Builder
   public SettlementGroup(String groupName, String joinCode, GroupStatus groupStatus, SettlementStatus settlementStatus,
                          User host, Wallet referencedWallet, Integer maxMembers) {
@@ -112,16 +118,9 @@ public class SettlementGroup {
     this.joinAttemptCount = 0;
   }
 
-  public void markSettlementBefore() {
-    this.settlementStatus = SettlementStatus.BEFORE;
-  }
-
   public boolean hasMember(Long userId) {
     return members.stream().anyMatch(m -> m.getUser().getId().equals(userId));
   }
 
-  public boolean isHost(Long userId) {
-    return this.host.getId().equals(userId);
-  }
 }
 

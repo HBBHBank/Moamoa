@@ -1,35 +1,12 @@
 package com.hbbhbank.moamoa.settlement.service;
 
-import com.hbbhbank.moamoa.global.exception.BaseException;
-import com.hbbhbank.moamoa.settlement.domain.*;
 import com.hbbhbank.moamoa.settlement.dto.request.CreateSettlementGroupRequestDto;
 import com.hbbhbank.moamoa.settlement.dto.request.VerifyJoinCodeRequestDto;
 import com.hbbhbank.moamoa.settlement.dto.response.*;
-import com.hbbhbank.moamoa.settlement.exception.SettlementErrorCode;
-import com.hbbhbank.moamoa.settlement.repository.SettlementGroupRepository;
-import com.hbbhbank.moamoa.settlement.repository.SettlementSharePeriodRepository;
-import com.hbbhbank.moamoa.settlement.repository.SettlementTransactionQueryRepository;
-import com.hbbhbank.moamoa.settlement.repository.SettlementTransactionRepository;
 import com.hbbhbank.moamoa.transfer.dto.request.PointTransferRequestDto;
-import com.hbbhbank.moamoa.user.domain.User;
-import com.hbbhbank.moamoa.user.service.UserService;
-import com.hbbhbank.moamoa.wallet.domain.InternalWalletTransaction;
-import com.hbbhbank.moamoa.wallet.domain.Wallet;
-import com.hbbhbank.moamoa.wallet.domain.WalletTransactionStatus;
-import com.hbbhbank.moamoa.wallet.domain.WalletTransactionType;
 import com.hbbhbank.moamoa.wallet.dto.response.transaction.TransactionResponseDto;
-import com.hbbhbank.moamoa.wallet.repository.InternalWalletTransactionRepository;
-import com.hbbhbank.moamoa.wallet.repository.WalletRepository;
-import com.hbbhbank.moamoa.wallet.service.WalletService;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.time.LocalDateTime;
 import java.util.List;
-import java.util.UUID;
 
 /**
  * SettlementGroupService는 정산 그룹 생성, 초대 코드 검증, 송금 처리, 정산 내역 계산 등
@@ -74,7 +51,7 @@ public interface SettlementGroupService {
    * - 송금자의 지갑에서 방장의 지갑으로 금액 이전
    * - 거래 내역 기록 및 정산 상태 업데이트
    */
-  void transferToHost(Long groupId, PointTransferRequestDto request);
+  void transferToHost(Long groupId);
 
   /**
    * 정산 내역 조회
