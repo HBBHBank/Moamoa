@@ -8,6 +8,7 @@ import com.hbbhbank.moamoa.user.dto.request.ChangeNameRequestDto;
 import com.hbbhbank.moamoa.user.dto.request.ChangePasswordRequestDto;
 import com.hbbhbank.moamoa.user.dto.request.ChangePhoneRequestDto;
 import com.hbbhbank.moamoa.user.dto.request.ChangeProfileImageRequestDto;
+import com.hbbhbank.moamoa.user.dto.response.HwanbeeTokenResponseDto;
 import com.hbbhbank.moamoa.user.dto.response.UserProfileResponseDto;
 import com.hbbhbank.moamoa.user.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -66,5 +67,11 @@ public class UserController {
   public ResponseEntity<Void> changeProfileImage(@RequestBody @Valid ChangeProfileImageRequestDto dto) {
     userService.changeProfileImage(dto);
     return ResponseEntity.ok().build();
+  }
+
+  @GetMapping("/get-hwanbee-token")
+  public ResponseEntity<BaseResponse<HwanbeeTokenResponseDto>> getHwanbeeToken() {
+    HwanbeeTokenResponseDto dto = userService.getHwanbeeToken();
+    return ResponseEntity.ok(BaseResponse.success(dto));
   }
 }

@@ -35,10 +35,9 @@ public class WalletController {
    */
   @PostMapping("/verification-code")
   public ResponseEntity<Void> generateVerificationCode(
-    @RequestBody @Valid VerificationCodeRequestDto requestDto,
-    @RequestParam String authorizationCode
+    @RequestBody @Valid VerificationCodeRequestDto requestDto
   ) {
-    walletService.requestVerificationCode(requestDto, authorizationCode);
+    walletService.requestVerificationCode(requestDto);
     return ResponseEntity.noContent().build();
   }
 

@@ -8,6 +8,7 @@ import com.hbbhbank.moamoa.user.dto.request.ChangeNameRequestDto;
 import com.hbbhbank.moamoa.user.dto.request.ChangePasswordRequestDto;
 import com.hbbhbank.moamoa.user.dto.request.ChangePhoneRequestDto;
 import com.hbbhbank.moamoa.user.dto.request.ChangeProfileImageRequestDto;
+import com.hbbhbank.moamoa.user.dto.response.HwanbeeTokenResponseDto;
 import com.hbbhbank.moamoa.user.dto.response.UserProfileResponseDto;
 import com.hbbhbank.moamoa.user.exception.UserErrorCode;
 import com.hbbhbank.moamoa.user.repository.UserRepository;
@@ -103,5 +104,19 @@ public class UserService {
     }
 
     return new UserProfileResponseDto(user.getName(), profileImageValue);
+  }
+
+  public HwanbeeTokenResponseDto getHwanbeeToken() {
+    User user = getByIdOrThrow(getCurrentUserId());
+
+    String accessToken = user.getAccessToken();
+    String refreshToken = user.getRefreshToken();
+    Integer expiresIn = user.getExpiresIn();
+
+    if (accessToken == null || refreshToken == null || expiresIn == null) {
+      throw BaseException.type(UserErrorCode.HWANBEE_TOKEN_NOT_FOUND);
+    }
+
+    return new HwanbeeTokenResponseDto(accessToken, refreshToken, expiresIn);
   }
 }

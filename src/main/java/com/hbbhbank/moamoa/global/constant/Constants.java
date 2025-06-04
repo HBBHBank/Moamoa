@@ -20,6 +20,6 @@ public final class Constants {
     "/api/v1/auth/jwt/reissue"
   );
 
-  public static final String MOAMOA_ACCOUNT = "130-999-888888"; // 모아모아 법인 계좌 번호
+  public static final String MOAMOA_ACCOUNT = "15002-402-000009"; // 모아모아 법인 계좌 번호
 }
 

@@ -43,7 +43,7 @@ public class WithdrawServiceImpl implements WithdrawService {
     User user = userRepository.findById(userId)
       .orElseThrow(() -> new BaseException(UserErrorCode.USER_NOT_FOUND));
 
-    String accessToken = oAuth2TokenService.ensureAccessToken(user, null);
+    String accessToken = oAuth2TokenService.ensureAccessToken(user);
 
     Wallet userWallet = walletRepository.findByUserId(userId)
       .orElseThrow(() -> new BaseException(TransferErrorCode.WALLET_NOT_FOUND));

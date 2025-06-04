@@ -12,10 +12,10 @@ import java.util.List;
 public interface WalletService {
 
   // 환비에 계좌 인증코드 발급 요청
-  void requestVerificationCode(VerificationCodeRequestDto req, String authorizationCode);
+  void requestVerificationCode(VerificationCodeRequestDto req);
 
   // 환비에서 인증 완료 후 지갑 생성
-  CreateWalletResponseDto createWalletAfterVerification(Integer inputCode);
+  CreateWalletResponseDto createWalletAfterVerification(String inputCode);
 
   // 통화 코드를 통해 지갑 조회
   SearchWalletResponseDto getWalletByUserAndCurrency(SearchWalletRequestDto req);

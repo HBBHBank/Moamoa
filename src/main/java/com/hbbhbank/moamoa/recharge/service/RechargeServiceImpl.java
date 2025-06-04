@@ -42,7 +42,7 @@ public class RechargeServiceImpl implements RechargeService {
     User user = userRepository.findById(userId)
       .orElseThrow(() -> new BaseException(UserErrorCode.USER_NOT_FOUND));
 
-    String accessToken = oAuth2TokenService.ensureAccessToken(user, null);
+    String accessToken = oAuth2TokenService.ensureAccessToken(user);
 
     Wallet wallet = walletRepository.findByWalletNumber(dto.walletNumber())
       .orElseThrow(() -> new BaseException(TransferErrorCode.WALLET_NOT_FOUND));

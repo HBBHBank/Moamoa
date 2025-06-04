@@ -26,11 +26,13 @@ import com.hbbhbank.moamoa.wallet.repository.HwanbeeLinkRepository;
 import com.hbbhbank.moamoa.wallet.repository.WalletRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class WalletServiceImpl implements WalletService {
@@ -48,24 +50,21 @@ public class WalletServiceImpl implements WalletService {
    * 환비에 인증코드 발급 요청
    */
   @Override
-  public void requestVerificationCode(VerificationCodeRequestDto req, String authorizationCode) {
+  public void requestVerificationCode(VerificationCodeRequestDto req) {
     Long userId = userService.getCurrentUserId();
     User user = userRepository.findById(userId)
       .orElseThrow(() -> new BaseException(UserErrorCode.USER_NOT_FOUND));
 
     // access token이 없거나 만료되었으면 발급
-    String accessToken = oAuth2TokenClient.ensureAccessToken(user, authorizationCode);
+    String accessToken = oAuth2TokenClient.ensureAccessToken(user);
 
     // 환비 API 호출 - 1원 송금 요청
     VerificationCodeResponseDto response = hwanbeeAccountClient.requestVerificationCode(req, accessToken);
 
-    String transactionId = response.data() != null ? response.data().transactionId() : null;
-    if (transactionId == null) {
-      throw new BaseException(WalletErrorCode.FAIL_VERIFICATION);
-    }
+    String transactionId = response.data().transactionId();
 
     // 추후 확인용으로 인증 요청 저장
-    accountVerificationRequestRepository.save(AccountVerificationRequest.from(transactionId));
+    accountVerificationRequestRepository.save(AccountVerificationRequest.from(transactionId, user));
   }
 
   /**
@@ -73,17 +72,20 @@ public class WalletServiceImpl implements WalletService {
    */
   @Override
   @Transactional
-  public CreateWalletResponseDto createWalletAfterVerification(Integer inputCode) {
+  public CreateWalletResponseDto createWalletAfterVerification(String inputCode) {
     Long userId = userService.getCurrentUserId();
+    User user = userRepository.findById(userId)
+      .orElseThrow(() -> new BaseException(UserErrorCode.USER_NOT_FOUND));
 
     // 가장 최근의 인증 요청(transactionId) 가져오기
-    AccountVerificationRequest verificationRequest = accountVerificationRequestRepository
-      .findByUserId(userId)
-      .orElseThrow(() -> new BaseException(WalletErrorCode.FAIL_VERIFICATION));
-    String transactionId = verificationRequest.getTransactionId();
+    AccountVerificationRequest request = accountVerificationRequestRepository
+      .findTopByUser_IdOrderByCreatedAtDesc(userId)
+      .orElseThrow(() -> new BaseException(WalletErrorCode.NOT_FOUND_VERIFICATION_REQUEST));
 
     // 입력 코드로 인증 확인
-    VerificationCheckRequestDto checkRequest = new VerificationCheckRequestDto(transactionId, inputCode);
+    VerificationCheckRequestDto checkRequest = new VerificationCheckRequestDto(request.getTransactionId(), inputCode);
+
+    // access token이 없거나 만료되었으면 발급
     VerificationCheckResponseDto checkResponse = hwanbeeAccountClient.verifyInputCode(checkRequest);
 
     VerificationAccountDataDto data = checkResponse.data();
@@ -92,7 +94,7 @@ public class WalletServiceImpl implements WalletService {
     }
 
     // 사용자 및 통화 정보 조회
-    User user = userService.getByIdOrThrow(userId);
+    userService.getByIdOrThrow(userId);
     Currency currency = currencyService.getByCodeOrThrow(data.currencyCode());
 
     // 중복된 환비 계좌가 없을 경우 새로 저장
@@ -117,7 +119,7 @@ public class WalletServiceImpl implements WalletService {
     Wallet wallet = Wallet.create(user, walletNumber, currency, accountLink);
 
     // 양방향 연관관계 설정
-    user.addWallet(wallet); // ★ 중요: user → wallet 연결
+    user.addWallet(wallet);
     // 저장
     walletRepository.save(wallet);
 

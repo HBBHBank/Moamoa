@@ -6,12 +6,12 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record VerificationAccountDataDto(
   Boolean verified,
-  String accountId,
   String accountNumber,
   String accountStatus,
   String currencyCode,
   String productCode,
   LocalDate openDate,
   LocalDate maturityDate,
-  String accountType
+  String accountType,
+  String message
 ) {}

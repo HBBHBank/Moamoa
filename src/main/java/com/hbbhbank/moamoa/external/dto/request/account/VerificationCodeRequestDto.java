@@ -1,12 +1,12 @@
 package com.hbbhbank.moamoa.external.dto.request.account;
 
 public record VerificationCodeRequestDto(
-  String externalBankAccountNumber,
+  String accountNumber,
   String currencyCode
 ) {
   public static VerificationCodeRequestDto of(VerificationCodeRequestDto origin) {
     return new VerificationCodeRequestDto(
-      origin.externalBankAccountNumber(),
+      origin.accountNumber(),
       origin.currencyCode()
     );
   }

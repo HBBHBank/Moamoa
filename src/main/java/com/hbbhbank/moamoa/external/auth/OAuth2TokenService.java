@@ -53,14 +53,14 @@ public class OAuth2TokenService {
    * [2] access token 보장: 유효하면 반환, 아니면 재발급
    */
   @Transactional
-  public String ensureAccessToken(User detachedUser, String code) {
+  public String ensureAccessToken(User detachedUser) {
     User user = getPersistentUser(detachedUser.getId());
 
     if (isTokenValid(user)) {
       return user.getAccessToken();
     }
 
-    return issueAccessTokenFromAuthorizationCode(user, code);
+    return issueAccessTokenFromAuthorizationCode(user, null);
   }
 
   /**
