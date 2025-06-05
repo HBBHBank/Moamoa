@@ -51,7 +51,7 @@ public interface SettlementGroupService {
    * - 송금자의 지갑에서 방장의 지갑으로 금액 이전
    * - 거래 내역 기록 및 정산 상태 업데이트
    */
-  void transferToHost(Long groupId);
+  boolean transferToHost(Long groupId);
 
   /**
    * 정산 내역 조회

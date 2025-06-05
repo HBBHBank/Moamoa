@@ -84,12 +84,12 @@ public class SettlementGroupController {
   }
 
   /**
-   * 방장에게 자동 송금 (프론트에서 바디 없이 호출)
+   * 방장에게 자동 송금
    */
   @PostMapping("/{groupId}/transfer")
-  public ResponseEntity<BaseResponse<Void>> transferToHost(@PathVariable Long groupId) {
-    settlementGroupService.transferToHost(groupId);
-    return ResponseEntity.ok(BaseResponse.success(null));
+  public ResponseEntity<BaseResponse<Boolean>> transferToHost(@PathVariable Long groupId) {
+    boolean isAllDone = settlementGroupService.transferToHost(groupId);
+    return ResponseEntity.ok(BaseResponse.success(isAllDone));
   }
 
   /**

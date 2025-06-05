@@ -118,7 +118,6 @@ public class SettlementGroupServiceImpl implements SettlementGroupService {
     return new VerifyJoinCodeResponseDto(group.getId(), group.getGroupName(), valid);
   }
 
-
   /**
    * 방장 -> 초대 코드 만료 시 재발급
    */
@@ -153,6 +152,9 @@ public class SettlementGroupServiceImpl implements SettlementGroupService {
 
     // 1. 공유 주기 종료 전에 정산 금액 계산
     BigDecimal totalAmount = settlementTransactionQueryRepository.sumNetSettlementAmount(group);
+    if (totalAmount.compareTo(BigDecimal.ZERO) <= 0) {
+      throw new BaseException(SettlementErrorCode.NO_ZERO_TO_SETTLE);
+    }
 
     // 2. 공유 주기 종료
     group.getSharePeriods().stream()
@@ -173,8 +175,6 @@ public class SettlementGroupServiceImpl implements SettlementGroupService {
 
     return new SettlementStartResponseDto(totalMemberCount, totalAmount, dividedAmount);
   }
-
-
 
   /**
    * 정산 취소
@@ -277,19 +277,24 @@ public class SettlementGroupServiceImpl implements SettlementGroupService {
       .toList();
   }
 
+  /**
+   * 방장에게 송금하기
+   */
   @Override
   @Transactional
-  public void transferToHost(Long groupId) {
-    User user = userService.getCurrentUser();
+  public boolean transferToHost(Long groupId) {
+    User user = userService.getCurrentUser(); // 현재 로그인한 유저 객체 가져오기
 
+    // 정산 그룹방 조회
     SettlementGroup group = groupRepository.findById(groupId)
       .orElseThrow(() -> new BaseException(SettlementErrorCode.GROUP_NOT_FOUND));
 
-    Wallet toWallet = group.getReferencedWallet();
+    Wallet toWallet = group.getReferencedWallet(); // 방장의 공유 지갑 조회
     if (toWallet == null) {
       throw new BaseException(WalletErrorCode.NOT_FOUND_WALLET);
     }
 
+    // 로그인한 사용자 지갑 조회
     Wallet fromWallet = walletRepository.findByUserIdAndCurrency(user.getId(), toWallet.getCurrency())
       .orElseThrow(() -> new BaseException(WalletErrorCode.NOT_FOUND_WALLET));
 
@@ -301,6 +306,10 @@ public class SettlementGroupServiceImpl implements SettlementGroupService {
     int totalMemberCount = group.getMembers().size() + 1;
 
     if (totalMemberCount == 0) {
+      throw new BaseException(SettlementErrorCode.NO_ZERO_TO_SETTLE);
+    }
+
+    if (totalAmount.compareTo(BigDecimal.ZERO) <= 0) {
       throw new BaseException(SettlementErrorCode.NO_ZERO_TO_SETTLE);
     }
 
@@ -362,11 +371,8 @@ public class SettlementGroupServiceImpl implements SettlementGroupService {
           .build();
         memberRepository.save(newMember);
       }
-
-      // 기존 그룹 삭제 (트랜잭션 후반에 수행)
-      settlementTransactionRepository.deleteAllByGroup(group);
-      groupRepository.delete(group);
     }
+    return allDone;
   }
 
 
@@ -461,8 +467,6 @@ public class SettlementGroupServiceImpl implements SettlementGroupService {
       .sorted(Comparator.comparing(TransactionResponseDto::transactedAt).reversed())
       .toList();
   }
-
-
 
   /**
    * 정산 그룹 비활성시 방장의 지갑에서 정산 내역 공유 중지
@@ -559,7 +563,6 @@ public class SettlementGroupServiceImpl implements SettlementGroupService {
 
     return SettlementGroupResponseDto.from(group, userId);
   }
-
 
   @Override
   @Transactional(readOnly = true)
