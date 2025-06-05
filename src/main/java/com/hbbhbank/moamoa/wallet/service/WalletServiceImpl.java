@@ -95,22 +95,22 @@ public class WalletServiceImpl implements WalletService {
 
     // 사용자 및 통화 정보 조회
     userService.getByIdOrThrow(userId);
-    Currency currency = currencyService.getByCodeOrThrow(data.currencyCode());
+    Currency currency = currencyService.getByCodeOrThrow(data.accountStatus());
 
     // 중복된 환비 계좌가 없을 경우 새로 저장
     HwanbeeAccountLink accountLink = hwanbeeLinkRepository
-      .findByUserIdAndHwanbeeBankAccountNumber(userId, data.accountNumber())
+      .findByUserIdAndHwanbeeBankAccountNumber(userId, "110123456789")
       .orElseGet(() -> {
         HwanbeeAccountLink link = HwanbeeAccountLink.create(
           userId,
-          data.accountNumber(),
-          data.currencyCode()
+          "110123456789", // 환비 계좌 정보
+          data.accountStatus()
         );
         return hwanbeeLinkRepository.save(link);
       });
 
     // 이미 동일 통화 지갑이 있으면 예외
-    if (walletRepository.existsByUserIdAndCurrencyCode(userId, data.currencyCode())) {
+    if (walletRepository.existsByUserIdAndCurrencyCode(userId, data.accountStatus())) {
       throw new BaseException(WalletErrorCode.DUPLICATE_WALLET);
     }
 
@@ -123,7 +123,7 @@ public class WalletServiceImpl implements WalletService {
     // 저장
     walletRepository.save(wallet);
 
-    return CreateWalletResponseDto.from(data.accountNumber());
+    return CreateWalletResponseDto.from("accountStatus");
   }
 
 
