@@ -8,7 +8,7 @@ public interface PaymentService {
 
   QrCodeCreateResponseDto generateQr(Long walletId);
 
-  void payWithQr(Long buyerUserId, String uuid, PaymentRequestDto req);
+  void payWithQr(String uuid, PaymentRequestDto req);
 
   byte[] getQRCodeImage(Long qrId);
 

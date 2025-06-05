@@ -9,6 +9,7 @@ import com.hbbhbank.moamoa.payment.exception.PaymentErrorCode;
 import com.hbbhbank.moamoa.payment.repository.QrImageRepository;
 import com.hbbhbank.moamoa.payment.util.QRCodeUtil;
 import com.hbbhbank.moamoa.user.domain.User;
+import com.hbbhbank.moamoa.user.service.UserService;
 import com.hbbhbank.moamoa.wallet.domain.InternalWalletTransaction;
 import com.hbbhbank.moamoa.wallet.domain.Wallet;
 import com.hbbhbank.moamoa.wallet.domain.WalletTransactionStatus;
@@ -32,6 +33,7 @@ public class PaymentServiceImpl implements PaymentService {
   private final QrImageRepository qrImageRepository;
   private final WalletRepository walletRepository;
   private final InternalWalletTransactionRepository internalWalletTransactionRepository;
+  private final UserService userService;
 
   @Override
   @Transactional
@@ -62,7 +64,10 @@ public class PaymentServiceImpl implements PaymentService {
 
   @Override
   @Transactional
-  public void payWithQr(Long buyerUserId, String uuid, PaymentRequestDto req) {
+  public void payWithQr(String uuid, PaymentRequestDto req) {
+
+    Long buyerUserId = userService.getCurrentUserId();
+
     QrImage qrImage = qrImageRepository.findByUuid(uuid)
       .orElseThrow(() -> new BaseException(PaymentErrorCode.FAILED_CREATE_QR));
 

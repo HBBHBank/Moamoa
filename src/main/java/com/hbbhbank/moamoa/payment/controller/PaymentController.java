@@ -51,10 +51,10 @@ public class PaymentController {
   @PostMapping("/use/{qrUuid}")
   public ResponseEntity<BaseResponse<Void>> useQrCode(
     @PathVariable String qrUuid,
-    @RequestBody @Valid PaymentRequestDto req,
-    @AuthenticationPrincipal UserPrincipal userDetails
+    @RequestBody @Valid PaymentRequestDto req
   ) {
-    paymentService.payWithQr(userDetails.getUserId(), qrUuid, req);
+
+    paymentService.payWithQr(qrUuid, req);
     return ResponseEntity.ok(BaseResponse.success(null));
   }
 
