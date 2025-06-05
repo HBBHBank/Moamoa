@@ -74,4 +74,14 @@ public class UserController {
     HwanbeeTokenResponseDto dto = userService.getHwanbeeToken();
     return ResponseEntity.ok(BaseResponse.success(dto));
   }
+
+  /**
+   * userId를 통한 특정 사용자 프로필 조회
+   * - 정산 그룹 등에서 다른 사용자의 프로필 이미지를 표시할 때 사용
+   */
+  @GetMapping("/{userId}/profile")
+  public ResponseEntity<BaseResponse<UserProfileResponseDto>> getUserProfileById(@PathVariable Long userId) {
+    UserProfileResponseDto dto = userService.getUserProfileById(userId);
+    return ResponseEntity.ok(BaseResponse.success(dto));
+  }
 }

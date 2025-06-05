@@ -572,4 +572,22 @@ public class SettlementGroupServiceImpl implements SettlementGroupService {
 
     return group.getMembers().size();
   }
+
+  @Override
+  public List<Long> getAllMemberUserIds(Long groupId) {
+    SettlementGroup group = groupRepository.findById(groupId)
+      .orElseThrow(() -> new BaseException(SettlementErrorCode.GROUP_NOT_FOUND));
+
+    List<Long> memberIds = group.getMembers().stream()
+      .map(member -> member.getUser().getId())
+      .collect(Collectors.toList());
+
+    // 방장도 포함
+    Long hostId = group.getHost().getId();
+    if (!memberIds.contains(hostId)) {
+      memberIds.add(hostId);
+    }
+
+    return memberIds;
+  }
 }

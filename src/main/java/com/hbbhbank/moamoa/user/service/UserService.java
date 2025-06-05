@@ -119,4 +119,17 @@ public class UserService {
 
     return new HwanbeeTokenResponseDto(accessToken, refreshToken, expiresIn);
   }
+
+  public UserProfileResponseDto getUserProfileById(Long userId) {
+    User user = userRepository.findById(userId)
+      .orElseThrow(() -> new BaseException(UserErrorCode.USER_NOT_FOUND));
+
+    String profileImageValue = null;
+
+    if (user.getProfileImage() != null) {
+      profileImageValue = ProfileImage.fromKey(user.getProfileImage().name()).getValue(); // IMAGE1 → img_1
+    }
+
+    return UserProfileResponseDto.from(user.getName(), profileImageValue);
+  }
 }

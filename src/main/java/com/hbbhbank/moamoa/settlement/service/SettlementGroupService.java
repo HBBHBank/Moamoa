@@ -91,4 +91,6 @@ public interface SettlementGroupService {
   SettlementGroupResponseDto getGroupDetail(Long groupId, Long userId, boolean allowIfJoinCodeValid);
 
   int getMemberCount(Long groupId);
+
+  List<Long> getAllMemberUserIds(Long groupId);
 }

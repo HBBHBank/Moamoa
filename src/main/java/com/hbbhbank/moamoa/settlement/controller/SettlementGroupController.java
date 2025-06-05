@@ -10,11 +10,14 @@ import com.hbbhbank.moamoa.wallet.dto.response.transaction.TransactionResponseDt
 import com.hbbhbank.moamoa.user.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/v1/settlement-groups")
 @RequiredArgsConstructor
@@ -183,5 +186,15 @@ public class SettlementGroupController {
     ));
   }
 
+  /**
+   * 정산 그룹 멤버들의 userId 목록 조회 (방장 포함)
+   */
+  @GetMapping("/{groupId}/member-ids")
+  public ResponseEntity<BaseResponse<List<Long>>> getGroupMemberUserIds(@PathVariable Long groupId) {
+    List<Long> userIds = settlementGroupService.getAllMemberUserIds(groupId);
+    log.info("요청 groupId: {}", groupId);
+    log.info("현재 사용자 ID: {}", SecurityContextHolder.getContext().getAuthentication().getName());
 
+    return ResponseEntity.ok(BaseResponse.success(userIds));
+  }
 }
