@@ -16,4 +16,13 @@ public class HwanbeeApiEndpoints {
 
   @Value("${hwanbee.remittance-url}")
   private String remittanceUrl;
+
+  @Value("${hwanbee.exchange-rates-url}")
+  private String exchangeRatesUrl;
+
+  @Value("${hwanbee.exchange-rate-url}")
+  private String exchangeRateUrl;
+
+  @Value("${hwanbee.exchange-deal-url}")
+  private String exchangeDealUrl;
 }
