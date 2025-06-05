@@ -7,9 +7,11 @@ import com.hbbhbank.moamoa.external.dto.response.exchange.ExchangeRateResponseDt
 import com.hbbhbank.moamoa.external.dto.response.exchange.SingleExchangeRateResponseDto;
 import com.hbbhbank.moamoa.global.common.BaseResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/v1/exchange")
 @RequiredArgsConstructor
@@ -22,6 +24,8 @@ public class ExchangeController {
    */
   @GetMapping("/rates")
   public ResponseEntity<BaseResponse<ExchangeRateResponseDto>> getAllRates() {
+    ExchangeRateResponseDto dto = exchangeService.getAllExchangeRates();
+    log.info("최종 반환: status={}, dataSize={}", dto.status(), dto.data().size());
     return ResponseEntity.ok(BaseResponse.success(exchangeService.getAllExchangeRates()));
   }
 

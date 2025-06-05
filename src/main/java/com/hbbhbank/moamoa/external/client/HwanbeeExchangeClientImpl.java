@@ -1,50 +1,67 @@
 package com.hbbhbank.moamoa.external.client;
 
+import com.hbbhbank.moamoa.external.auth.OAuth2TokenService;
 import com.hbbhbank.moamoa.external.common.HwanbeeApiEndpoints;
 import com.hbbhbank.moamoa.external.dto.request.exchange.ExchangeDealRequestDto;
 import com.hbbhbank.moamoa.external.dto.response.exchange.ExchangeDealResponseDto;
 import com.hbbhbank.moamoa.external.dto.response.exchange.ExchangeRateResponseDto;
 import com.hbbhbank.moamoa.external.dto.response.exchange.SingleExchangeRateResponseDto;
+import com.hbbhbank.moamoa.global.exception.BaseException;
+import com.hbbhbank.moamoa.global.security.util.SecurityUtil;
+import com.hbbhbank.moamoa.user.domain.User;
+import com.hbbhbank.moamoa.user.exception.UserErrorCode;
+import com.hbbhbank.moamoa.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class HwanbeeExchangeClientImpl implements HwanbeeExchangeClient {
 
   private final RestTemplate hwanbeeRestTemplate;
   private final HwanbeeApiEndpoints hwanbeeApiEndpoints;
+  private final OAuth2TokenService oAuth2TokenService;
+  private final UserRepository userRepository;
+
 
   @Override
-  public ExchangeRateResponseDto getAllExchangeRates(String accessToken) {
+  public ExchangeRateResponseDto getAllExchangeRates(String unusedToken) {
+    String accessToken = ensureValidAccessToken();
+    String url = hwanbeeApiEndpoints.getExchangeRatesUrl();
+    log.info("[외부 호출] 모든 환율 조회 API: {}", url);
+
     HttpHeaders headers = new HttpHeaders();
     headers.setBearerAuth(accessToken);
     HttpEntity<Void> request = new HttpEntity<>(headers);
 
     ResponseEntity<ExchangeRateResponseDto> response = hwanbeeRestTemplate.exchange(
-      hwanbeeApiEndpoints.getExchangeRatesUrl(),
+      url,
       HttpMethod.GET,
       request,
       ExchangeRateResponseDto.class
     );
 
+    log.info("[응답 수신] 모든 환율 - 상태: {}", response.getStatusCode());
     return response.getBody();
   }
 
   @Override
   public SingleExchangeRateResponseDto getExchangeRateByCurrency(String accessToken, String currencyCode) {
+    String url = UriComponentsBuilder
+      .fromHttpUrl(hwanbeeApiEndpoints.getExchangeRateUrl())
+      .queryParam("currency", currencyCode)
+      .toUriString();
+
+    log.info("[외부 호출] 단일 환율 조회 API: {}", url);
+
     HttpHeaders headers = new HttpHeaders();
     headers.setBearerAuth(accessToken);
     HttpEntity<Void> requestEntity = new HttpEntity<>(headers);
-
-    // 쿼리 파라미터 방식으로 URL 생성
-    String url = UriComponentsBuilder
-      .fromHttpUrl(hwanbeeApiEndpoints.getExchangeRateUrl()) // 예: http://localhost:8080/api/exchange/v1/rate
-      .queryParam("currency", currencyCode)
-      .toUriString();
 
     ResponseEntity<SingleExchangeRateResponseDto> response = hwanbeeRestTemplate.exchange(
       url,
@@ -53,23 +70,37 @@ public class HwanbeeExchangeClientImpl implements HwanbeeExchangeClient {
       SingleExchangeRateResponseDto.class
     );
 
+    log.info("[응답 수신] 단일 환율 - 통화: {} / 상태: {}", currencyCode, response.getStatusCode());
     return response.getBody();
   }
 
   @Override
   public ExchangeDealResponseDto requestExchange(String accessToken, ExchangeDealRequestDto request) {
+    String url = hwanbeeApiEndpoints.getExchangeDealUrl();
+    log.debug("[외부 호출] 환전 실행 API: {}", url);
+
     HttpHeaders headers = new HttpHeaders();
     headers.setBearerAuth(accessToken);
     headers.setContentType(MediaType.APPLICATION_JSON);
     HttpEntity<ExchangeDealRequestDto> requestEntity = new HttpEntity<>(request, headers);
 
     ResponseEntity<ExchangeDealResponseDto> response = hwanbeeRestTemplate.exchange(
-      hwanbeeApiEndpoints.getExchangeDealUrl(),
+      url,
       HttpMethod.POST,
       requestEntity,
       ExchangeDealResponseDto.class
     );
 
+    log.info("[응답 수신] 환전 완료 - {} → {}, 금액: {}, 상태: {}",
+      request.toCurrency(), request.amount(), response.getStatusCode());
+
     return response.getBody();
+  }
+
+  private String ensureValidAccessToken() {
+    Long userId = SecurityUtil.getCurrentUserId();
+    User user = userRepository.findById(userId)
+      .orElseThrow(() -> new BaseException(UserErrorCode.USER_NOT_FOUND));
+    return oAuth2TokenService.ensureAccessToken(user);
   }
 }

@@ -12,7 +12,9 @@ import com.hbbhbank.moamoa.global.security.util.SecurityUtil;
 import com.hbbhbank.moamoa.user.exception.UserErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ExchangeServiceImpl implements ExchangeService {
@@ -23,34 +25,40 @@ public class ExchangeServiceImpl implements ExchangeService {
   @Override
   public ExchangeRateResponseDto getAllExchangeRates() {
     String accessToken = getAccessTokenForCurrentUser();
+    log.info("[환율 조회] 모든 환율 요청 실행");
     return hwanbeeExchangeClient.getAllExchangeRates(accessToken);
   }
 
   @Override
   public SingleExchangeRateResponseDto getExchangeRateByCurrency(String currencyCode) {
     String accessToken = getAccessTokenForCurrentUser();
+    log.info("[환율 조회] 단일 환율 요청 실행 - currencyCode: {}", currencyCode);
     return hwanbeeExchangeClient.getExchangeRateByCurrency(accessToken, currencyCode);
   }
 
   @Override
   public ExchangeDealResponseDto requestExchange(ExchangeDealRequestDto request) {
     String accessToken = getAccessTokenForCurrentUser();
+    log.info("[환전 요청] {} → {} / 금액: {}", request.toCurrency(), request.amount());
     return hwanbeeExchangeClient.requestExchange(accessToken, request);
   }
 
-  /**
-   * 현재 로그인된 유저의 환비 API 액세스 토큰을 가져옵니다.
-   */
   private String getAccessTokenForCurrentUser() {
-    Long userId = SecurityUtil.getCurrentUserId(); // 로그인된 유저 ID 가져오기
+    Long userId = SecurityUtil.getCurrentUserId();
     User user = userRepository.findById(userId)
-      .orElseThrow(() -> new BaseException(UserErrorCode.USER_NOT_FOUND));
+      .orElseThrow(() -> {
+        log.warn("[액세스 토큰 조회 실패] 유저 ID: {} → USER_NOT_FOUND", userId);
+        return new BaseException(UserErrorCode.USER_NOT_FOUND);
+      });
 
-    String accessToken = user.getAccessToken(); // User 엔티티에 저장된 환비 Access Token 가져오기
+    String accessToken = user.getAccessToken();
     if (accessToken == null || accessToken.isBlank()) {
+      log.warn("[액세스 토큰 없음] 유저 ID: {}", userId);
       throw new BaseException(UserErrorCode.HWANBEE_TOKEN_NOT_FOUND);
     }
 
+    log.debug("[액세스 토큰 조회 성공] 유저 ID: {}", userId);
     return accessToken;
   }
 }
+
