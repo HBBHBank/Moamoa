@@ -11,6 +11,7 @@ import com.hbbhbank.moamoa.global.security.util.SecurityUtil;
 import com.hbbhbank.moamoa.user.domain.User;
 import com.hbbhbank.moamoa.user.exception.UserErrorCode;
 import com.hbbhbank.moamoa.user.repository.UserRepository;
+import org.springframework.cache.annotation.Cacheable;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
@@ -28,7 +29,7 @@ public class HwanbeeExchangeClientImpl implements HwanbeeExchangeClient {
   private final OAuth2TokenService oAuth2TokenService;
   private final UserRepository userRepository;
 
-
+  @Cacheable(value = "exchangeRates", key = "'dailyRates'")
   @Override
   public ExchangeRateResponseDto getAllExchangeRates(String unusedToken) {
     String accessToken = ensureValidAccessToken();
@@ -49,6 +50,7 @@ public class HwanbeeExchangeClientImpl implements HwanbeeExchangeClient {
     log.info("[응답 수신] 모든 환율 - 상태: {}", response.getStatusCode());
     return response.getBody();
   }
+
 
   @Override
   public SingleExchangeRateResponseDto getExchangeRateByCurrency(String accessToken, String currencyCode) {

@@ -28,6 +28,7 @@ public enum HwanbeeErrorCode implements ErrorCode {
   // 환전 관련
   EXCHANGE_QUOTE_FAILED(HttpStatus.BAD_GATEWAY, "HWANBEE_008", "환전 정보 조회에 실패했습니다."),
   EXCHANGE_DEAL_FAILED(HttpStatus.BAD_GATEWAY, "HWANBEE_009", "환전 진행에 실패했습니다."),
+  FAILED_TO_FETCH_RATES(HttpStatus.BAD_GATEWAY, "HWANBEE_011", "환율 정보를 가져오는 데 실패했습니다.")
   ;
 
   private final HttpStatus status;

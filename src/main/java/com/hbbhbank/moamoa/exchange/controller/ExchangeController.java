@@ -26,6 +26,7 @@ public class ExchangeController {
   public ResponseEntity<BaseResponse<ExchangeRateResponseDto>> getAllRates() {
     ExchangeRateResponseDto dto = exchangeService.getAllExchangeRates();
     log.info("최종 반환: status={}, dataSize={}", dto.status(), dto.data().size());
+    log.info("최종 반환: status={}, dataSize={}", dto.status(), dto.data() != null ? dto.data().size() : -1);
     return ResponseEntity.ok(BaseResponse.success(exchangeService.getAllExchangeRates()));
   }
 
