@@ -29,12 +29,11 @@ public class HwanbeeExchangeClientImpl implements HwanbeeExchangeClient {
   private final OAuth2TokenService oAuth2TokenService;
   private final UserRepository userRepository;
 
-  @Cacheable(value = "exchangeRates", key = "'dailyRates'")
   @Override
-  public ExchangeRateResponseDto getAllExchangeRates(String unusedToken) {
+  public ExchangeRateResponseDto getAllExchangeRatesV1() {
     String accessToken = ensureValidAccessToken();
     String url = hwanbeeApiEndpoints.getExchangeRatesUrl();
-    log.info("[외부 호출] 모든 환율 조회 API: {}", url);
+    log.info("[외부 호출] 모든 환율 조회 API (캐시 미사용): {}", url);
 
     HttpHeaders headers = new HttpHeaders();
     headers.setBearerAuth(accessToken);
@@ -47,10 +46,53 @@ public class HwanbeeExchangeClientImpl implements HwanbeeExchangeClient {
       ExchangeRateResponseDto.class
     );
 
-    log.info("[응답 수신] 모든 환율 - 상태: {}", response.getStatusCode());
+    log.info("[응답 수신] 모든 환율 - 상태 (캐시 미사용): {}", response.getStatusCode());
     return response.getBody();
   }
 
+  @Cacheable(cacheResolver="redisCacheResolver", value = "redisExchangeRates", key = "'dailyRates'")
+  @Override
+  public ExchangeRateResponseDto getAllExchangeRatesV2() {
+    String accessToken = ensureValidAccessToken();
+    String url = hwanbeeApiEndpoints.getExchangeRatesUrl();
+    log.info("[외부 호출] 모든 환율 조회 API (Redis 캐시 사용): {}", url);
+
+    HttpHeaders headers = new HttpHeaders();
+    headers.setBearerAuth(accessToken);
+    HttpEntity<Void> request = new HttpEntity<>(headers);
+
+    ResponseEntity<ExchangeRateResponseDto> response = hwanbeeRestTemplate.exchange(
+      url,
+      HttpMethod.GET,
+      request,
+      ExchangeRateResponseDto.class
+    );
+
+    log.info("[응답 수신] 모든 환율 - 상태 (Redis 캐시 사용): {}", response.getStatusCode());
+    return response.getBody();
+  }
+
+  @Cacheable(value = "memoryExchangeRates", key = "'dailyRates'")
+  @Override
+  public ExchangeRateResponseDto getAllExchangeRatesV3() {
+    String accessToken = ensureValidAccessToken();
+    String url = hwanbeeApiEndpoints.getExchangeRatesUrl();
+    log.info("[외부 호출] 모든 환율 조회 API (인메모리 캐시 사용): {}", url);
+
+    HttpHeaders headers = new HttpHeaders();
+    headers.setBearerAuth(accessToken);
+    HttpEntity<Void> request = new HttpEntity<>(headers);
+
+    ResponseEntity<ExchangeRateResponseDto> response = hwanbeeRestTemplate.exchange(
+      url,
+      HttpMethod.GET,
+      request,
+      ExchangeRateResponseDto.class
+    );
+
+    log.info("[응답 수신] 모든 환율 - 상태 (인메모리 캐시 사용): {}", response.getStatusCode());
+    return response.getBody();
+  }
 
   @Override
   public SingleExchangeRateResponseDto getExchangeRateByCurrency(String accessToken, String currencyCode) {

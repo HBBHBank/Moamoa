@@ -23,10 +23,21 @@ public class ExchangeServiceImpl implements ExchangeService {
   private final UserRepository userRepository;
 
   @Override
-  public ExchangeRateResponseDto getAllExchangeRates() {
-    String accessToken = getAccessTokenForCurrentUser();
-    log.info("[환율 조회] 모든 환율 요청 실행");
-    return hwanbeeExchangeClient.getAllExchangeRates(accessToken);
+  public ExchangeRateResponseDto getAllExchangeRatesV1() {
+    log.info("[환율 조회] 모든 환율 요청 실행 (캐시 미사용)");
+    return hwanbeeExchangeClient.getAllExchangeRatesV1();
+  }
+
+  @Override
+  public ExchangeRateResponseDto getAllExchangeRatesV2() {
+    log.info("[환율 조회] 모든 환율 요청 실행 (Redis 캐시 사용)");
+    return hwanbeeExchangeClient.getAllExchangeRatesV2();
+  }
+
+  @Override
+  public ExchangeRateResponseDto getAllExchangeRatesV3() {
+    log.info("[환율 조회] 모든 환율 요청 실행 (인메모리 캐시 사용)");
+    return hwanbeeExchangeClient.getAllExchangeRatesV3();
   }
 
   @Override
