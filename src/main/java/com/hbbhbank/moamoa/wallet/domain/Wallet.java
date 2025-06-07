@@ -75,9 +75,4 @@ public class Wallet {
     }
     this.balance = this.balance.subtract(amount);
   }
-
-  // 동일 통화 지갑 여부 확인
-  public boolean isSameCurrency(Wallet other) {
-    return this.currency.equals(other.getCurrency());
-  }
 }

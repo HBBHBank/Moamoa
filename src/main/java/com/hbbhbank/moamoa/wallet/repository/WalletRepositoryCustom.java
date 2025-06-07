@@ -13,5 +13,11 @@ public interface WalletRepositoryCustom {
 
   List<Wallet> findAllByUser(Long userId);
 
+  // 기존 조회
   Optional<Wallet> findByWalletNumber(String walletNumber);
+
+  // 락 적용 조회 (동시성 제어)
+  Optional<Wallet> findByWalletNumberForUpdate(String walletNumber);
+
+  List<Wallet> findByWalletNumberForUpdateV2(List<String> walletNumbers);
 }

@@ -17,13 +17,36 @@ public class PointTransferController {
   private final PointTransferService pointTransferService;
 
   /**
-   * 사용자 포인트 송금 요청
+   * 사용자 포인트 송금 요청 (데드락 발생, 동시성 문제 미해결 - 데드락으로 어느정도 예방은 가능하지만 해결은 X)
    */
-  @PostMapping("/points")
-  public ResponseEntity<BaseResponse<PointTransferResponseDto>> transferPoints(
+  @PostMapping("/points-v1")
+  public ResponseEntity<BaseResponse<PointTransferResponseDto>> transferPointsV1(
     @RequestBody @Valid PointTransferRequestDto requestDto
   ) {
-    PointTransferResponseDto responseDto = pointTransferService.transferByUser(requestDto);
+    PointTransferResponseDto responseDto = pointTransferService.transferByUserV1(requestDto);
     return ResponseEntity.ok(BaseResponse.success(responseDto));
   }
+
+  /**
+   * 사용자 포인트 송금 요청 (데드락 해결)
+   */
+  @PostMapping("/points-v2")
+  public ResponseEntity<BaseResponse<PointTransferResponseDto>> transferPointsV2(
+    @RequestBody @Valid PointTransferRequestDto requestDto
+  ) {
+    PointTransferResponseDto responseDto = pointTransferService.transferByUserV2(requestDto);
+    return ResponseEntity.ok(BaseResponse.success(responseDto));
+  }
+
+  /**
+   * 사용자 포인트 송금 요청 (데드락 해결 + 동시성 해결)
+   */
+  @PostMapping("/points-v3")
+  public ResponseEntity<BaseResponse<PointTransferResponseDto>> transferPointsV3(
+    @RequestBody @Valid PointTransferRequestDto requestDto
+  ) {
+    PointTransferResponseDto responseDto = pointTransferService.transferByUserV3(requestDto);
+    return ResponseEntity.ok(BaseResponse.success(responseDto));
+  }
+
 }
