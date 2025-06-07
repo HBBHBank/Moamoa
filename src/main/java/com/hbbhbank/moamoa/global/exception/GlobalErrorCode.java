@@ -35,6 +35,7 @@ public enum GlobalErrorCode implements ErrorCode {
   TOKEN_UNSUPPORTED_ERROR(HttpStatus.UNAUTHORIZED, "REQUEST_017", "지원하지않는 토큰입니다."),
   TOKEN_UNKNOWN_ERROR(HttpStatus.UNAUTHORIZED, "REQUEST_018", "알 수 없는 토큰입니다."),
   INVALID_JWT_PAYLOAD(HttpStatus.UNAUTHORIZED, "REQUEST_019", "JWT Payload에 필수 정보가 없습니다."),
+  BAD_REQUEST(HttpStatus.BAD_REQUEST, "REQUEST_020", "잘못된 요청입니다."),
 
   /**
    * 500 : 응답 실패 - 서버 오류

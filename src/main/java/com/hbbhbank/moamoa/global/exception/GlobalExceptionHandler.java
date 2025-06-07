@@ -4,6 +4,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.BindException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
@@ -16,92 +17,120 @@ import org.springframework.web.servlet.NoHandlerFoundException;
 
 import java.util.List;
 
-// 예외가 발생했을 때 애플리케이션이 일관된 JSON 형식으로 응답을 내려주도록 보장하고,
-// 개발자 디버깅도 쉽게 해주기 위해 구현.
+/**
+ * 전역 예외 처리기 (Spring MVC 환경)
+ */
 @Slf4j
-@RestControllerAdvice // 모든 컨트롤러에서 발생한 예외를 가로챔
+@RestControllerAdvice
 @RequiredArgsConstructor
 public class GlobalExceptionHandler {
+
   /**
-   * Custom Exception 전용 ExceptionHandler (@RequestBody)
+   * 우리 서비스에서 직접 던지는 BaseException 처리
    */
   @ExceptionHandler(BaseException.class)
-  public ResponseEntity<CustomErrorResponse> applicationException(BaseException e) {
+  public ResponseEntity<CustomErrorResponse> onBaseException(BaseException e) {
     ErrorCode code = e.getCode();
-    logging(code);
-
+    log.warn("Business error: {} | {}", code.errorCode(), code.message());
     return ResponseEntity
       .status(code.status())
       .body(CustomErrorResponse.from(code));
   }
 
   /**
-   * 요청 데이터 Validation 전용 ExceptionHandler (@RequestBody)
+   * @RequestBody 바인딩/검증 에러 처리
    */
-  @ExceptionHandler(MethodArgumentNotValidException.class) // 	필드 메시지를 추출해서 사용자에게 보여줘야 함 (ex: "이메일은 필수입니다.")
-  public ResponseEntity<CustomErrorResponse> methodArgumentNotValidException(MethodArgumentNotValidException e) {
-    List<FieldError> fieldErrors = e.getBindingResult().getFieldErrors();
-    return convert(GlobalErrorCode.VALIDATION_ERROR, extractErrorMessage(fieldErrors));
+  @ExceptionHandler(MethodArgumentNotValidException.class)
+  public ResponseEntity<CustomErrorResponse> onMethodArgumentNotValid(
+    MethodArgumentNotValidException e,
+    HttpServletRequest request
+  ) {
+    String msg = extractErrorMessage(e.getBindingResult().getFieldErrors());
+    return convert(GlobalErrorCode.VALIDATION_ERROR, msg);
   }
 
   /**
-   * 요청 데이터 Validation 전용 ExceptionHandler (@ModelAttribute)
+   * @ModelAttribute 바인딩/검증 에러 처리
    */
-  @ExceptionHandler(BindException.class) // 유효성 검증이지만 쿼리/폼 파라미터 기반일 때 따로 잡아야 함
-  public ResponseEntity<CustomErrorResponse> bindException(BindException e) {
-    List<FieldError> fieldErrors = e.getBindingResult().getFieldErrors();
-    return convert(GlobalErrorCode.VALIDATION_ERROR, extractErrorMessage(fieldErrors));
+  @ExceptionHandler(BindException.class)
+  public ResponseEntity<CustomErrorResponse> onBindException(
+    BindException e,
+    HttpServletRequest request
+  ) {
+    String msg = extractErrorMessage(e.getBindingResult().getFieldErrors());
+    return convert(GlobalErrorCode.VALIDATION_ERROR, msg);
   }
+
+  /**
+   * 잘못된 JSON (파싱) 에러 처리
+   */
+  @ExceptionHandler(HttpMessageNotReadableException.class)
+  public ResponseEntity<CustomErrorResponse> onHttpMessageNotReadable(
+    HttpMessageNotReadableException e,
+    HttpServletRequest request
+  ) {
+    log.warn("Malformed JSON request: {}", e.getMessage());
+    return convert(GlobalErrorCode.BAD_REQUEST, "잘못된 요청 바디입니다.");
+  }
+
+  /**
+   * 존재하지 않는 URL 또는 파라미터 타입 불일치
+   */
+  @ExceptionHandler({NoHandlerFoundException.class, MethodArgumentTypeMismatchException.class})
+  public ResponseEntity<CustomErrorResponse> onNotFoundOrTypeMismatch(
+    Exception e,
+    HttpServletRequest request
+  ) {
+    return convert(GlobalErrorCode.NOT_SUPPORTED_URI_ERROR);
+  }
+
+  /**
+   * 잘못된 HTTP 메서드 (GET → POST 등)
+   */
+  @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+  public ResponseEntity<CustomErrorResponse> onMethodNotSupported(
+    HttpRequestMethodNotSupportedException e,
+    HttpServletRequest request
+  ) {
+    return convert(GlobalErrorCode.NOT_SUPPORTED_METHOD_ERROR);
+  }
+
+  /**
+   * 잘못된 Media Type (Content-Type)
+   */
+  @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+  public ResponseEntity<CustomErrorResponse> onMediaTypeNotSupported(
+    HttpMediaTypeNotSupportedException e,
+    HttpServletRequest request
+  ) {
+    return convert(GlobalErrorCode.NOT_SUPPORTED_MEDIA_TYPE_ERROR);
+  }
+
+  /**
+   * 그 외 모든 예외 처리 (500 Internal Server Error)
+   */
+  @ExceptionHandler(Throwable.class)
+  public ResponseEntity<CustomErrorResponse> onAnyException(
+    Throwable e,
+    HttpServletRequest request
+  ) {
+    log.error("Unhandled exception", e);
+    return convert(GlobalErrorCode.INTERNAL_SERVER_ERROR);
+  }
+
+  // — 공통 헬퍼 메서드 — //
 
   private String extractErrorMessage(List<FieldError> fieldErrors) {
     if (fieldErrors.size() == 1) {
       return fieldErrors.get(0).getDefaultMessage();
     }
-
-    StringBuffer buffer = new StringBuffer();
-    for (FieldError error : fieldErrors) {
-      buffer.append(error.getDefaultMessage()).append("\n");
+    StringBuilder sb = new StringBuilder();
+    for (FieldError err : fieldErrors) {
+      sb.append(err.getDefaultMessage()).append("; ");
     }
-    return buffer.toString();
+    return sb.toString();
   }
 
-  /**
-   * 존재하지 않는 Endpoint 전용 ExceptionHandler
-   */
-  @ExceptionHandler({NoHandlerFoundException.class, MethodArgumentTypeMismatchException.class})
-  public ResponseEntity<CustomErrorResponse> noHandlerFoundException() {
-    return convert(GlobalErrorCode.NOT_SUPPORTED_URI_ERROR);
-  }
-
-  /**
-   * HTTP Request Method 오류 전용 ExceptionHandler
-   * 메서드 에러 (GET → POST) 를 명확하게 알려줌
-   */
-  @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
-  public ResponseEntity<CustomErrorResponse> httpRequestMethodNotSupportedException() {
-    return convert(GlobalErrorCode.NOT_SUPPORTED_METHOD_ERROR);
-  }
-
-  /**
-   * MediaType 전용 ExceptionHandler
-   * Content-Type 관련 문제를 명확히 처리
-   */
-  @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
-  public ResponseEntity<CustomErrorResponse> httpMediaTypeNotSupportedException() {
-    return convert(GlobalErrorCode.NOT_SUPPORTED_MEDIA_TYPE_ERROR);
-  }
-
-  /**
-   * 내부 서버 오류 전용 ExceptionHandler
-   */
-  @ExceptionHandler(RuntimeException.class)
-  public ResponseEntity<CustomErrorResponse> handleAnyException(RuntimeException e, HttpServletRequest request) {
-    log.warn(e.getMessage());
-    log.warn(request.toString());
-    return convert(GlobalErrorCode.INTERNAL_SERVER_ERROR);
-  }
-
-  // 중복 제거 + 일관된 응답 포맷을 유지
   private ResponseEntity<CustomErrorResponse> convert(ErrorCode code) {
     return ResponseEntity
       .status(code.status())
@@ -112,9 +141,5 @@ public class GlobalExceptionHandler {
     return ResponseEntity
       .status(code.status())
       .body(CustomErrorResponse.of(code, message));
-  }
-
-  private void logging(ErrorCode code) {
-    log.warn("{} | {} | {}", code.status(), code.errorCode(), code.message());
   }
 }
