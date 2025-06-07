@@ -298,23 +298,27 @@ public class SettlementGroupServiceImpl implements SettlementGroupService {
     Wallet fromWallet = walletRepository.findByUserIdAndCurrency(user.getId(), toWallet.getCurrency())
       .orElseThrow(() -> new BaseException(WalletErrorCode.NOT_FOUND_WALLET));
 
+    // 정산 상태가 진행 중이 아니면 예외 처리
     if (settlementTransactionRepository.existsByGroupAndFromUser(group, user)) {
       throw new BaseException(SettlementErrorCode.USER_ALREADY_TRANSFERRED);
     }
 
-    BigDecimal totalAmount = settlementTransactionQueryRepository.sumNetSettlementAmount(group);
-    int totalMemberCount = group.getMembers().size() + 1;
+    BigDecimal totalAmount = settlementTransactionQueryRepository.sumNetSettlementAmount(group); // 정산 금액 계산
+    int totalMemberCount = group.getMembers().size() + 1; // 정산 멤버 수
 
+    // 정산 멤버 수가 0명이면 예외 처리
     if (totalMemberCount == 0) {
       throw new BaseException(SettlementErrorCode.NO_ZERO_TO_SETTLE);
     }
 
+    // 정산 금액이 0원이면 예외 처리
     if (totalAmount.compareTo(BigDecimal.ZERO) <= 0) {
       throw new BaseException(SettlementErrorCode.NO_ZERO_TO_SETTLE);
     }
 
-    BigDecimal perAmount = totalAmount.divide(BigDecimal.valueOf(totalMemberCount), 2, RoundingMode.DOWN);
+    BigDecimal perAmount = totalAmount.divide(BigDecimal.valueOf(totalMemberCount), 2, RoundingMode.DOWN); // 1인당 정산 금액 계산
 
+    // 송금자의 잔액이 부족한 경우 예외처리
     if (fromWallet.getBalance().compareTo(perAmount) < 0) {
       throw new BaseException(SettlementErrorCode.INSUFFICIENT_BALANCE);
     }
@@ -333,7 +337,7 @@ public class SettlementGroupServiceImpl implements SettlementGroupService {
 
     // 2. 정산 트랜잭션 저장
     SettlementTransaction st = SettlementTransaction.create(group, user, perAmount);
-    st.markTransferred(tx);
+    st.markTransferred(tx); // 로그인한 사용자는 송금 완료된 상태로 표시
     settlementTransactionRepository.save(st);
 
     group.getMembers().stream()
@@ -374,8 +378,6 @@ public class SettlementGroupServiceImpl implements SettlementGroupService {
     }
     return allDone;
   }
-
-
 
   /**
    * 그룹 폭파하기

@@ -103,6 +103,9 @@ public class PaymentServiceImpl implements PaymentService {
     );
   }
 
+  /**
+   * QR 이미지 조회
+   */
   @Override
   @Transactional(readOnly = true)
   public byte[] getQRCodeImage(Long qrId) {
@@ -111,29 +114,37 @@ public class PaymentServiceImpl implements PaymentService {
       .getQrImage();
   }
 
+  /**
+   * QR 재발급
+   */
   @Override
   @Transactional
   public QrCodeCreateResponseDto reissueQr(Long walletId) {
     return generateQr(walletId);
   }
 
+  /**
+   * QR 정보 조회
+   */
   @Override
   @Transactional(readOnly = true)
   public QrCodeInfoResponseDto getQrInfo(String uuid) {
+    // 1. UUID로 QR 이미지 조회
     QrImage qrImage = qrImageRepository.findByUuid(uuid)
       .orElseThrow(() -> new BaseException(PaymentErrorCode.FAILED_CREATE_QR));
 
+    // 2. QR 이미지가 만료되었는지 확인
     if (qrImage.getExpiresAt().isBefore(LocalDateTime.now())) {
       throw new BaseException(PaymentErrorCode.QR_EXPIRED);
     }
 
-    Wallet wallet = qrImage.getWallet();
-    User owner = wallet.getUser();
+    Wallet wallet = qrImage.getWallet(); // QR 이미지에 연결된 지갑 정보
+    User owner = wallet.getUser(); // 지갑 소유자 정보
 
     return new QrCodeInfoResponseDto(
-      wallet.getId(),
-      owner.getName(),
-      wallet.getCurrency().getCode()
+      wallet.getId(), // QR 이미지가 연결된 지갑 ID
+      owner.getName(), // 지갑 소유자 이름
+      wallet.getCurrency().getCode() // 지갑 통화 코드
     );
   }
 }
