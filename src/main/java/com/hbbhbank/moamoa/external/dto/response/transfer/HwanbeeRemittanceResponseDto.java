@@ -9,7 +9,6 @@ public record HwanbeeRemittanceResponseDto(
 ) {
   public record RemittanceData(
     String transactionId,
-    String transferredAt,
-    BigDecimal balanceAfter
+    String transferredAt
   ) {}
 }

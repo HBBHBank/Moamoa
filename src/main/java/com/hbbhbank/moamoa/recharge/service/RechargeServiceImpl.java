@@ -16,6 +16,7 @@ import com.hbbhbank.moamoa.wallet.domain.*;
 import com.hbbhbank.moamoa.wallet.repository.ExternalWalletTransactionRepository;
 import com.hbbhbank.moamoa.wallet.repository.HwanbeeLinkRepository;
 import com.hbbhbank.moamoa.wallet.repository.WalletRepository;
+import com.hbbhbank.moamoa.wallet.service.CurrencyService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -32,8 +33,9 @@ public class RechargeServiceImpl implements RechargeService {
   private final OAuth2TokenService oAuth2TokenService;
   private final UserRepository userRepository;
   private final HwanbeeLinkRepository hwanbeeLinkRepository;
+  private final CurrencyService currencyService;
 
-  private static final String MOAMOA_CORPORATE_ACCOUNT = "130-999-888888";
+  private static final String MOAMOA_CORPORATE_ACCOUNT = "15002-129-000010";
 
   @Override
   public RechargeResponseDto charge(RechargeRequestDto dto) {
@@ -44,7 +46,9 @@ public class RechargeServiceImpl implements RechargeService {
 
     String accessToken = oAuth2TokenService.ensureAccessToken(user);
 
-    Wallet wallet = walletRepository.findByWalletNumber(dto.walletNumber())
+    Currency currency = currencyService.getByCodeOrThrow(dto.currencyCode());
+
+    Wallet wallet = walletRepository.findByUserIdAndCurrency(userId, currency)
       .orElseThrow(() -> new BaseException(TransferErrorCode.WALLET_NOT_FOUND));
 
     HwanbeeAccountLink hwanbeeAccount = hwanbeeLinkRepository.findByUserIdAndHwanbeeBankAccountNumber(userId, dto.hwanbeeAccountNumber())
@@ -53,12 +57,12 @@ public class RechargeServiceImpl implements RechargeService {
     // 환비 송금 요청
     hwanbeeRemittanceClient.remitFromUserAccount(
       HwanbeeRemittanceRequestDto.builder()
-        .fromAccountNumber(dto.hwanbeeAccountNumber())
+        .fromAccountNumber("15002-847-000002")
         .toAccountNumber(MOAMOA_CORPORATE_ACCOUNT)
         .amount(dto.amount())
-        .currency(wallet.getCurrency().getName())
+        .currency(wallet.getCurrency().getCode())
         .description("모아모아 포인트 충전")
-        .partnerTransactionId("moamoa-charge-" + wallet.getWalletNumber() + "-" + System.currentTimeMillis())
+        .partnerTransactionId("tx-20250606-0006")
         .requestedAt(ZonedDateTime.now().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME))
         .build(),
       accessToken

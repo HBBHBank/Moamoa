@@ -7,7 +7,7 @@ import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
 
 public record RechargeRequestDto(
-  @NotBlank String walletNumber,
+  @NotBlank String currencyCode,
   @NotBlank String hwanbeeAccountNumber,
   @NotNull @DecimalMin("0.01") BigDecimal amount,
   @NotBlank String password
