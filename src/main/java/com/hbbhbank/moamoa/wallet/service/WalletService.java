@@ -17,6 +17,9 @@ public interface WalletService {
   // 환비에서 인증 완료 후 지갑 생성
   CreateWalletResponseDto createWalletAfterVerification(String inputCode);
 
+  // 환비에서 인증 완료 후 계좌 연결
+  BankAccountResponseDto searchHwannbeeAccount(String inputCode);
+
   // 통화 코드를 통해 지갑 조회
   SearchWalletResponseDto getWalletByUserAndCurrency(SearchWalletRequestDto req);
 
@@ -27,7 +30,7 @@ public interface WalletService {
   Wallet getWalletByNumberOrThrow(String WalletNumber);
 
   // 환비 계좌 목록 조회
-  List<BankAccountResponseDto> getBankAccountsByUser(String currencyCode);
+  List<BankAccountResponseDto> getBankAccountsByUser();
 
   // 지갑 번호와 통화 코드로 지갑 조회 및 통화 검증
   Wallet getWalletByNumberAndVerifyCurrency(String walletNumber, String currencyCode);

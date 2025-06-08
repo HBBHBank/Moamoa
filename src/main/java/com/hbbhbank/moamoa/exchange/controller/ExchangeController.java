@@ -59,6 +59,9 @@ public class ExchangeController {
     return ResponseEntity.ok(BaseResponse.success(exchangeService.getExchangeRateByCurrency(currency)));
   }
 
+  /**
+   * 환전 요청 처리
+   */
   @PostMapping("/deal")
   public ResponseEntity<BaseResponse<ExchangeDealResponseDto>> requestExchange(
     @RequestBody ExchangeDealRequestDto requestDto

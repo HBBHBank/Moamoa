@@ -50,7 +50,6 @@ public class ExchangeServiceImpl implements ExchangeService {
   @Override
   public ExchangeDealResponseDto requestExchange(ExchangeDealRequestDto request) {
     String accessToken = getAccessTokenForCurrentUser();
-    log.info("[환전 요청] {} → {} / 금액: {}", request.toCurrency(), request.amount());
     return hwanbeeExchangeClient.requestExchange(accessToken, request);
   }
 

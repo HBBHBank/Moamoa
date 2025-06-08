@@ -99,11 +99,11 @@ public class WalletServiceImpl implements WalletService {
 
     // 중복된 환비 계좌가 없을 경우 새로 저장
     HwanbeeAccountLink accountLink = hwanbeeLinkRepository
-      .findByUserIdAndHwanbeeBankAccountNumber(userId, "110123456789")
+      .findByUserIdAndHwanbeeBankAccountNumber(userId, data.accountNumber())
       .orElseGet(() -> {
         HwanbeeAccountLink link = HwanbeeAccountLink.create(
           userId,
-          "110123456789", // 환비 계좌 정보
+          data.accountNumber(), // 환비 계좌 정보
           data.accountStatus()
         );
         return hwanbeeLinkRepository.save(link);
@@ -126,7 +126,67 @@ public class WalletServiceImpl implements WalletService {
     return CreateWalletResponseDto.from("accountStatus");
   }
 
+  /**
+   * 환비 계좌 인증이 완료된 후 계좌 연결
+   */
+  @Override
+  @Transactional
+  public BankAccountResponseDto searchHwannbeeAccount(String inputCode) {
+    Long userId = userService.getCurrentUserId();
+    User user = userRepository.findById(userId)
+      .orElseThrow(() -> new BaseException(UserErrorCode.USER_NOT_FOUND));
 
+    // 가장 최근의 인증 요청(transactionId) 가져오기
+    AccountVerificationRequest request = accountVerificationRequestRepository
+      .findTopByUser_IdOrderByCreatedAtDesc(userId)
+      .orElseThrow(() -> new BaseException(WalletErrorCode.NOT_FOUND_VERIFICATION_REQUEST));
+
+    // 입력 코드로 인증 확인
+    VerificationCheckRequestDto checkRequest = new VerificationCheckRequestDto(request.getTransactionId(), inputCode);
+
+    // access token이 없거나 만료되었으면 발급
+    VerificationCheckResponseDto checkResponse = hwanbeeAccountClient.verifyInputCode(checkRequest);
+
+    VerificationAccountDataDto data = checkResponse.data();
+    if (data == null || !Boolean.TRUE.equals(data.verified())) {
+      throw new BaseException(WalletErrorCode.FAIL_VERIFICATION);
+    }
+
+    // 사용자 및 통화 정보 조회
+    userService.getByIdOrThrow(userId);
+    Currency currency = currencyService.getByCodeOrThrow(data.accountStatus());
+
+    // 중복된 환비 계좌가 없을 경우 새로 저장
+    HwanbeeAccountLink accountLink = hwanbeeLinkRepository
+      .findByUserIdAndHwanbeeBankAccountNumber(userId, data.accountNumber())
+      .orElseGet(() -> {
+        HwanbeeAccountLink link = HwanbeeAccountLink.create(
+          userId,
+          data.accountNumber(), // 환비 계좌 정보
+          data.accountStatus()
+        );
+        return hwanbeeLinkRepository.save(link);
+      });
+
+    return BankAccountResponseDto.from(accountLink);
+  }
+
+  /**
+   * 연결된 환비 계좌 목록 조회
+   */
+  @Override
+  public List<BankAccountResponseDto> getBankAccountsByUser() {
+    // 1) 현재 로그인한 사용자 ID 조회
+    Long userId = userService.getCurrentUserId();
+
+    // 2) 저장된 환비 계좌 링크 전체 조회
+    List<HwanbeeAccountLink> links = hwanbeeLinkRepository.findByUserId(userId);
+
+    // 3) DTO 변환 후 반환
+    return links.stream()
+      .map(BankAccountResponseDto::from)
+      .collect(Collectors.toList());
+  }
 
   /**
    * 사용자별 통화 코드로 지갑 조회

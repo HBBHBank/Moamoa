@@ -126,6 +126,7 @@ public class HwanbeeExchangeClientImpl implements HwanbeeExchangeClient {
     HttpHeaders headers = new HttpHeaders();
     headers.setBearerAuth(accessToken);
     headers.setContentType(MediaType.APPLICATION_JSON);
+
     HttpEntity<ExchangeDealRequestDto> requestEntity = new HttpEntity<>(request, headers);
 
     ResponseEntity<ExchangeDealResponseDto> response = hwanbeeRestTemplate.exchange(
@@ -135,8 +136,13 @@ public class HwanbeeExchangeClientImpl implements HwanbeeExchangeClient {
       ExchangeDealResponseDto.class
     );
 
-    log.info("[응답 수신] 환전 완료 - {} → {}, 금액: {}, 상태: {}",
-      request.toCurrency(), request.amount(), response.getStatusCode());
+    log.info("[응답 수신] 환전 완료 - KRW계좌: {} → FCY계좌: {}, 원화금액: {}, 통화코드: {}, HTTP 상태: {}",
+      request.krwAccount(),
+      request.fcyAccount(),
+      request.krwAmount(),
+      request.currencyCode(),
+      response.getStatusCode()
+    );
 
     return response.getBody();
   }

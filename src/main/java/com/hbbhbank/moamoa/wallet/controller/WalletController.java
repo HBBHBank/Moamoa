@@ -57,6 +57,20 @@ public class WalletController {
   }
 
   /**
+   * 인증 코드 검증 후, 환전을 위해 환비 계좌와 연결합니다.
+   *
+   * @param inputCode 인증 코드 (환비 앱에서 확인 가능)
+   * @return VerificationCheckResponseDto
+   */
+  @GetMapping("/hwanbee-account")
+  public ResponseEntity<BaseResponse<BankAccountResponseDto>> searchHwanbeeAccount(
+    @RequestBody @Valid String inputCode
+  ) {
+    BankAccountResponseDto response = walletService.searchHwannbeeAccount(inputCode);
+    return ResponseEntity.ok(BaseResponse.success(response));
+  }
+
+  /**
    * 현재 로그인한 사용자의 특정 통화에 해당하는 지갑 정보를 조회합니다.
    *
    * @param currencyCode 통화 코드 (예: KRW, USD)
@@ -111,5 +125,8 @@ public class WalletController {
     return ResponseEntity.ok(BaseResponse.success(SearchWalletResponseDto.from(wallet)));
   }
 
+  // TODO: 환비의 원화 계좌 잔액 조회
+
+  // TODO: 환비의 외화 계좌 잔액 조회
 }
 
